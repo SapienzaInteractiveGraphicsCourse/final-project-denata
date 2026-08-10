@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Unused legacy asset
+public/assets/models/shipping_containers.glb
+
+# Tool caches
+.vite/
+coverage/
+
+# Environment files and local overrides
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+
