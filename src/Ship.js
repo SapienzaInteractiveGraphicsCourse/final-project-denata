@@ -38,7 +38,7 @@ export class Ship {
     const targetX = this.isDocked ? -100 : -15;
 
     this.tween = new Tween(this.root.position, false)
-      .to({ x: targetX }, 3000)
+      .to({ x: targetX }, 9000)
       .easing(Easing.Quadratic.InOut)
       .onComplete(() => {
         this.isDocked = !this.isDocked;

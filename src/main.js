@@ -3,6 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Ship } from './Ship.js';
 import { Truck } from './Truck.js';
+import { Crane } from './Crane.js';
+import { Dock } from './Dock.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -48,91 +50,17 @@ sea.position.set(0, -0.2, -64);
 scene.add(sea);
 
 // DOCK
-const dock = new THREE.Mesh(
-  new THREE.BoxGeometry(180, 5, 80),
-  new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
-);
-dock.position.set(0, -0.5, 46);
-scene.add(dock);
-
-// ROAD
-const roadMaterial = new THREE.MeshStandardMaterial({
-  color: 0x30343b,
-  roughness: 0.9
-});
-
-const horizontalRoad = new THREE.Mesh(
-  new THREE.BoxGeometry(50, 0.06, 8),
-  roadMaterial
-);
-horizontalRoad.position.set(-65, 2.03, 20);
-scene.add(horizontalRoad);
-
-function createQuarterTurn(innerRadius, outerRadius) {
-  const shape = new THREE.Shape();
-
-  shape.moveTo(0, outerRadius);
-  shape.absarc(0, 0, outerRadius, Math.PI / 2, 0, true);
-  shape.lineTo(innerRadius, 0);
-  shape.absarc(0, 0, innerRadius, 0, Math.PI / 2, false);
-  shape.closePath();
-
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.06,
-    bevelEnabled: false,
-    curveSegments: 24
-  });
-
-  geometry.rotateX(-Math.PI / 2);
-
-  return geometry;
-}
-
-const curvedRoad = new THREE.Mesh(createQuarterTurn(4, 12), roadMaterial);
-curvedRoad.position.set(-40, 2, 28);
-scene.add(curvedRoad);
-
-const verticalRoad = new THREE.Mesh(
-  new THREE.BoxGeometry(8, 0.06, 48),
-  roadMaterial
-);
-verticalRoad.position.set(-32, 2.03, 52);
-scene.add(verticalRoad);
-
-const roadMarkings = new THREE.Group();
-const markingGeometry = new THREE.BoxGeometry(3, 0.02, 0.12);
-const markingMaterial = new THREE.MeshStandardMaterial({ color: 0xf2d35f });
-
-for (let x = -84; x <= -44; x += 8) {
-  const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-  marking.position.set(x, 2.07, 20);
-  roadMarkings.add(marking);
-}
-
-for (let z = 34; z <= 72; z += 8) {
-  const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-  marking.position.set(-32, 2.07, z);
-  marking.rotation.y = -Math.PI / 2;
-  roadMarkings.add(marking);
-}
-
-for (let index = 0; index <= 2; index += 1) {
-  const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
-  const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-  marking.position.set(
-    -40 + Math.cos(angle) * 8,
-    2.07,
-    28 + Math.sin(angle) * 8
-  );
-  marking.rotation.y = -angle - Math.PI / 2;
-  roadMarkings.add(marking);
-}
-
-scene.add(roadMarkings);
+const dock = new Dock();
+scene.add(dock.root);
 
 // TRUCK
 const truck = new Truck();
 scene.add(truck.root);
+
+// CRANE
+const crane = new Crane();
+crane.root.position.set(12, 2, 42);
+scene.add(crane.root);
 
 // SHIP PLACEHOLDER
 const ship = new Ship();
@@ -195,6 +123,7 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'KeyT' && !event.repeat) {
     truck.toggle();
   }
+
 });
 
 // RESIZE

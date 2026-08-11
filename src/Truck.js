@@ -16,31 +16,62 @@ export class Truck {
     const roadHeight = 2.06;
     const turnOffset = 8 * 0.5522847498;
 
+    this.arrivalPath = new THREE.CurvePath();
+    this.arrivalPath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(-96, roadHeight, 20),
+        new THREE.Vector3(-8, roadHeight, 20)
+      )
+    );
+    this.arrivalPath.add(
+      new THREE.CubicBezierCurve3(
+        new THREE.Vector3(-8, roadHeight, 20),
+        new THREE.Vector3(-8 + turnOffset, roadHeight, 20),
+        new THREE.Vector3(0, roadHeight, 28 - turnOffset),
+        new THREE.Vector3(0, roadHeight, 28)
+      )
+    );
+    this.arrivalPath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(0, roadHeight, 28),
+        new THREE.Vector3(0, roadHeight, 42)
+      )
+    );
+
     this.departurePath = new THREE.CurvePath();
     this.departurePath.add(
       new THREE.LineCurve3(
-        new THREE.Vector3(-70, roadHeight, 20),
-        new THREE.Vector3(-40, roadHeight, 20)
+        new THREE.Vector3(0, roadHeight, 42),
+        new THREE.Vector3(0, roadHeight, 56)
       )
     );
     this.departurePath.add(
       new THREE.CubicBezierCurve3(
-        new THREE.Vector3(-40, roadHeight, 20),
-        new THREE.Vector3(-40 + turnOffset, roadHeight, 20),
-        new THREE.Vector3(-32, roadHeight, 28 - turnOffset),
-        new THREE.Vector3(-32, roadHeight, 28)
+        new THREE.Vector3(0, roadHeight, 56),
+        new THREE.Vector3(0, roadHeight, 56 + turnOffset),
+        new THREE.Vector3(-8 + turnOffset, roadHeight, 64),
+        new THREE.Vector3(-8, roadHeight, 64)
       )
     );
     this.departurePath.add(
       new THREE.LineCurve3(
-        new THREE.Vector3(-32, roadHeight, 28),
-        new THREE.Vector3(-32, roadHeight, 80)
+        new THREE.Vector3(-8, roadHeight, 64),
+        new THREE.Vector3(-24, roadHeight, 64)
       )
     );
-
-    this.arrivalPath = new THREE.LineCurve3(
-      new THREE.Vector3(-96, roadHeight, 20),
-      new THREE.Vector3(-70, roadHeight, 20)
+    this.departurePath.add(
+      new THREE.CubicBezierCurve3(
+        new THREE.Vector3(-24, roadHeight, 64),
+        new THREE.Vector3(-24 - turnOffset, roadHeight, 64),
+        new THREE.Vector3(-32, roadHeight, 72 - turnOffset),
+        new THREE.Vector3(-32, roadHeight, 72)
+      )
+    );
+    this.departurePath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(-32, roadHeight, 72),
+        new THREE.Vector3(-32, roadHeight, 150)
+      )
     );
 
     this.loadModel();
@@ -55,7 +86,7 @@ export class Truck {
         const model = gltf.scene;
         const initialBox = new THREE.Box3().setFromObject(model);
         const initialSize = initialBox.getSize(new THREE.Vector3());
-        const targetLength = 12;
+        const targetLength =9;
         const scale = targetLength / initialSize.z;
 
         model.scale.setScalar(scale);
@@ -80,7 +111,8 @@ export class Truck {
           this.wheelRadius = wheelSize.y / 2;
         }
 
-        this.state = 'parked';
+        this.root.visible = false;
+        this.state = 'absent';
       },
       undefined,
       (error) => {
@@ -136,10 +168,16 @@ export class Truck {
 
     this.state = 'departing';
     this.motion.progress = 0;
-    this.animateTo(1, 1, () => {
-      this.root.visible = false;
-      this.state = 'absent';
-    });
+    this.animateTo(
+      1,
+      1,
+      () => {
+        this.root.visible = false;
+        this.state = 'absent';
+      },
+      this.departurePath,
+      8000
+    );
   }
 
   arrive() {
@@ -156,7 +194,7 @@ export class Truck {
         this.state = 'parked';
       },
       this.arrivalPath,
-      3000
+      9000
     );
   }
 
