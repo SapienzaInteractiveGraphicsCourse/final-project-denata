@@ -64,7 +64,13 @@ scene.add(crane.root);
 
 const craneControls = {
   raiseBoom: false,
-  lowerBoom: false
+  lowerBoom: false,
+  rotateLeft: false,
+  rotateRight: false,
+  moveTowardSea: false,
+  moveAwayFromSea: false,
+  raiseSpreader: false,
+  lowerSpreader: false
 };
 
 // SHIP PLACEHOLDER
@@ -136,6 +142,32 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'KeyS') {
     craneControls.lowerBoom = true;
   }
+
+  if (event.code === 'KeyA') {
+    craneControls.rotateLeft = true;
+  }
+
+  if (event.code === 'KeyD') {
+    craneControls.rotateRight = true;
+  }
+
+  if (event.code === 'ArrowUp') {
+    craneControls.moveTowardSea = true;
+    event.preventDefault();
+  }
+
+  if (event.code === 'ArrowDown') {
+    craneControls.moveAwayFromSea = true;
+    event.preventDefault();
+  }
+
+  if (event.code === 'KeyR') {
+    craneControls.raiseSpreader = true;
+  }
+
+  if (event.code === 'KeyF') {
+    craneControls.lowerSpreader = true;
+  }
 });
 
 window.addEventListener('keyup', (event) => {
@@ -145,6 +177,30 @@ window.addEventListener('keyup', (event) => {
 
   if (event.code === 'KeyS') {
     craneControls.lowerBoom = false;
+  }
+
+  if (event.code === 'KeyA') {
+    craneControls.rotateLeft = false;
+  }
+
+  if (event.code === 'KeyD') {
+    craneControls.rotateRight = false;
+  }
+
+  if (event.code === 'ArrowUp') {
+    craneControls.moveTowardSea = false;
+  }
+
+  if (event.code === 'ArrowDown') {
+    craneControls.moveAwayFromSea = false;
+  }
+
+  if (event.code === 'KeyR') {
+    craneControls.raiseSpreader = false;
+  }
+
+  if (event.code === 'KeyF') {
+    craneControls.lowerSpreader = false;
   }
 });
 
@@ -159,10 +215,22 @@ window.addEventListener('resize', () => {
 function animate(time) {
   const boomDirection = Number(craneControls.lowerBoom)
     - Number(craneControls.raiseBoom);
+  const rotationDirection = Number(craneControls.rotateRight)
+    - Number(craneControls.rotateLeft);
+  const travelDirection = Number(craneControls.moveAwayFromSea)
+    - Number(craneControls.moveTowardSea);
+  const hoistDirection = Number(craneControls.raiseSpreader)
+    - Number(craneControls.lowerSpreader);
 
   ship.update(time);
   truck.update(time);
-  crane.update(time, boomDirection);
+  crane.update(
+    time,
+    boomDirection,
+    rotationDirection,
+    travelDirection,
+    hoistDirection
+  );
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);

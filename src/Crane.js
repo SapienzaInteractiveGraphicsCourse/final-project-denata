@@ -7,8 +7,13 @@ export class Crane {
     this.root.name = 'Crane';
     this.model = null;
     this.parts = {};
+    this.wheels = [];
+    this.wheelRadius = 0;
     this.boomAnimation = null;
     this.lastUpdateTime = null;
+    this.travelSpeed = 1.5;
+    this.minTravelZ = 18;
+    this.maxTravelZ = 70;
 
     this.loadModel();
   }
@@ -22,7 +27,7 @@ export class Crane {
         const model = gltf.scene;
 
         model.scale.setScalar(0.5885823965072632);
-        model.rotation.y = -Math.PI / 2;
+        model.rotation.y = -Math.PI ;
         model.updateMatrixWorld(true);
 
         const base = model.getObjectByName('Base_Base_Platform');
@@ -75,9 +80,13 @@ export class Crane {
           this.parts[name] = model.getObjectByName(name);
         });
 
+        // Keep the upper body facing the direction used before the crane was turned.
+        this.parts.Platform_Body.rotation.y = Math.PI / 2;
+
         this.model = model;
         this.root.add(model);
         model.updateMatrixWorld(true);
+        this.setupWheels();
         this.setupBoomAnimation();
       },
       undefined,
@@ -85,6 +94,57 @@ export class Crane {
         console.error('Error loading crane:', error);
       }
     );
+  }
+
+  setupWheels() {
+    for (let index = 1; index <= 12; index += 1) {
+      const name = `Wheel_${String(index).padStart(2, '0')}`;
+      const wheel = this.parts[name];
+      const parent = wheel.parent;
+      const wheelBox = new THREE.Box3().setFromObject(wheel);
+      const wheelCenter = wheelBox.getCenter(new THREE.Vector3());
+      const wheelSize = wheelBox.getSize(new THREE.Vector3());
+      const pivot = new THREE.Group();
+
+      pivot.name = `${name}_Pivot`;
+      pivot.position.copy(parent.worldToLocal(wheelCenter));
+      parent.add(pivot);
+
+      // attach() keeps the wheel in place when it becomes a child of the pivot.
+      pivot.attach(wheel);
+      this.wheels.push(pivot);
+
+      if (this.wheelRadius === 0) {
+        this.wheelRadius = wheelSize.y / 2;
+      }
+    }
+  }
+
+  move(travelDirection, deltaTime) {
+    const previousZ = this.root.position.z;
+    const nextZ = previousZ
+      + travelDirection * this.travelSpeed * deltaTime;
+
+    this.root.position.z = THREE.MathUtils.clamp(
+      nextZ,
+      this.minTravelZ,
+      this.maxTravelZ
+    );
+
+    const distance = this.root.position.z - previousZ;
+    this.rotateWheels(distance);
+  }
+
+  rotateWheels(distance) {
+    if (distance === 0 || this.wheelRadius === 0) {
+      return;
+    }
+
+    const rotation = -distance / this.wheelRadius;
+
+    this.wheels.forEach((wheel) => {
+      wheel.rotation.x += rotation;
+    });
   }
 
   setupBoomAnimation() {
@@ -152,6 +212,8 @@ export class Crane {
     );
 
     this.boomAnimation = {
+      upperBody: platform,
+      rotationSpeed: THREE.MathUtils.degToRad(15),
       boom,
       minAngle: THREE.MathUtils.degToRad(-70),
       maxAngle: THREE.MathUtils.degToRad(-5),
@@ -173,7 +235,11 @@ export class Crane {
           verticalBoomAnchor
         ),
         bottomAnchor: verticalBottomAnchor,
-        bottomHeight: verticalBottom.y
+        bottomHeight: verticalBottom.y,
+        minHeight: 0,
+        maxHeight: 35,
+        minCableLength: 2,
+        hoistSpeed: 3
       },
       spreader,
       spreaderPosition: spreader.position.clone(),
@@ -308,6 +374,16 @@ export class Crane {
       animation.verticalCables.stretchablePart.endAnchor
     );
     const verticalBottomAnchor = animation.verticalCables.bottomAnchor;
+    const maximumHeight = Math.min(
+      animation.verticalCables.maxHeight,
+      verticalTop.y - animation.verticalCables.minCableLength
+    );
+
+    animation.verticalCables.bottomHeight = THREE.MathUtils.clamp(
+      animation.verticalCables.bottomHeight,
+      animation.verticalCables.minHeight,
+      maximumHeight
+    );
 
     verticalBottomAnchor.position.set(
       verticalTop.x,
@@ -326,25 +402,45 @@ export class Crane {
       .add(spreaderOffset);
   }
 
-  update(time, boomDirection) {
+  update(
+    time,
+    boomDirection = 0,
+    rotationDirection = 0,
+    travelDirection = 0,
+    hoistDirection = 0
+  ) {
     const previousTime = this.lastUpdateTime ?? time;
     const deltaTime = Math.min((time - previousTime) / 1000, 0.1);
     this.lastUpdateTime = time;
 
-    if (!this.boomAnimation || boomDirection === 0) {
+    this.move(travelDirection, deltaTime);
+
+    if (!this.boomAnimation) {
       return;
     }
 
     const animation = this.boomAnimation;
-    const nextAngle = animation.boom.rotation.x
-      + boomDirection * animation.speed * deltaTime;
 
-    animation.boom.rotation.x = THREE.MathUtils.clamp(
-      nextAngle,
-      animation.minAngle,
-      animation.maxAngle
-    );
-    animation.boom.updateMatrix();
-    this.updateBoomConnections();
+    animation.upperBody.rotation.y +=
+      rotationDirection * animation.rotationSpeed * deltaTime;
+
+    animation.verticalCables.bottomHeight +=
+      hoistDirection * animation.verticalCables.hoistSpeed * deltaTime;
+
+    if (boomDirection !== 0) {
+      const nextAngle = animation.boom.rotation.x
+        + boomDirection * animation.speed * deltaTime;
+
+      animation.boom.rotation.x = THREE.MathUtils.clamp(
+        nextAngle,
+        animation.minAngle,
+        animation.maxAngle
+      );
+      animation.boom.updateMatrix();
+    }
+
+    if (boomDirection !== 0 || hoistDirection !== 0) {
+      this.updateBoomConnections();
+    }
   }
 }
