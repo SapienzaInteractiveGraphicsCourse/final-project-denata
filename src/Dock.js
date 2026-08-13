@@ -12,11 +12,11 @@ export class Dock {
 
   createPlatform() {
     this.platform = new THREE.Mesh(
-      new THREE.BoxGeometry(180, 5, 140),
+      new THREE.BoxGeometry(1200, 5, 600),
       new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
     );
     this.platform.name = 'DockPlatform';
-    this.platform.position.set(0, -0.5, 76);
+    this.platform.position.set(0, -0.5, 305);
     this.root.add(this.platform);
   }
 

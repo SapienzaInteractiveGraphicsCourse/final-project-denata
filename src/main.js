@@ -17,8 +17,8 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(160, 150, 160);
-camera.lookAt(0, 0, 0);
+camera.position.set(0, 25, 85);
+camera.lookAt(0, 4, 26);
 
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -27,11 +27,11 @@ document.body.appendChild(renderer.domElement);
 
 // CAMERA CONTROLS
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 0);
+controls.target.set(0, 4, 26);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
-controls.minDistance = 3;
-controls.maxDistance = 400;
+controls.minDistance = 12;
+controls.maxDistance = 160;
 controls.update();
 
 // LIGHTS
@@ -43,10 +43,10 @@ scene.add(sun);
 
 // SEA
 const sea = new THREE.Mesh(
-  new THREE.BoxGeometry(260, 0.2, 140),
+  new THREE.BoxGeometry(1200, 0.2, 600),
   new THREE.MeshStandardMaterial({ color: 0x168aad })
 );
-sea.position.set(0, -0.2, -64);
+sea.position.set(0, -0.2, -295);
 scene.add(sea);
 
 // DOCK
