@@ -77,6 +77,13 @@ const craneControls = {
 const ship = new Ship();
 scene.add(ship.root);
 
+// CARGO AREAS
+export const cargoAreas = {
+  ship: ship.slots,
+  dock: dock.depotSlots,
+  truck: truck.slots
+};
+
 // CONTAINER IMPORTED FROM GLB
 const loader = new GLTFLoader();
 
@@ -84,38 +91,39 @@ loader.load(
   '/assets/models/20ft_container.glb',
 
   (gltf) => {
-    const containers = gltf.scene;
+    const template = gltf.scene;
 
-    // Initial position on the dock
-    containers.position.set(0, 2, 10);
-
-    scene.add(containers);
-
-    // Model dimensions
-    const box = new THREE.Box3().setFromObject(containers);
+    const box = new THREE.Box3().setFromObject(template);
     const size = new THREE.Vector3();
     box.getSize(size);
 
-    console.log('Container loaded:', containers);
+    console.log('Container loaded:', template);
     console.log(
       `Model dimensions: x=${size.x.toFixed(2)}, y=${size.y.toFixed(2)}, z=${size.z.toFixed(2)}`
     );
 
-    const cargoPositions = [
-      [-8, 4.5, -2.5],
-      [0, 4.5, -2.5],
-      [8, 4.5, -2.5],
-      [-8, 4.5, 2.5],
-      [0, 4.5, 2.5],
-      [8, 4.5, 2.5]
-    ];
+    const shipSlotIds = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
-    cargoPositions.forEach(([x, y, z], index) => {
-      const cargo = containers.clone(true);
+    shipSlotIds.forEach((slotId, index) => {
+      const cargo = template.clone(true);
       cargo.name = `ShipContainer-${index + 1}`;
-      cargo.rotation.y = Math.PI / 2;
-      ship.addCargo(cargo, new THREE.Vector3(x, y, z));
+      ship.slots.place(cargo, slotId);
     });
+
+    let depotIndex = 1;
+    let depotSlotId = dock.depotSlots.findEmpty();
+
+    while (depotSlotId) {
+      const cargo = template.clone(true);
+      cargo.name = `DepotContainer-${depotIndex}`;
+      dock.depotSlots.place(cargo, depotSlotId);
+      depotIndex += 1;
+      depotSlotId = dock.depotSlots.findEmpty();
+    }
+
+    const truckCargo = template.clone(true);
+    truckCargo.name = 'TruckContainer-1';
+    truck.slots.place(truckCargo, 'T1');
   },
 
   undefined,

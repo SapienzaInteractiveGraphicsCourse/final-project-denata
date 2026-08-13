@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
+import { CargoSlots } from './CargoSlots.js';
 
 export class Truck {
   constructor() {
@@ -12,6 +13,18 @@ export class Truck {
     this.motion = { progress: 0 };
     this.wheels = [];
     this.wheelRadius = 0;
+
+    this.cargoRoot = new THREE.Group();
+    this.cargoRoot.name = 'TruckCargo';
+    this.root.add(this.cargoRoot);
+
+    this.slots = new CargoSlots(this.cargoRoot, [
+      {
+        id: 'T1',
+        position: new THREE.Vector3(0, 0, 0),
+        rotationY: Math.PI / 2
+      }
+    ]);
 
     const roadHeight = 2.06;
     const turnOffset = 8 * 0.5522847498;
@@ -86,7 +99,7 @@ export class Truck {
         const model = gltf.scene;
         const initialBox = new THREE.Box3().setFromObject(model);
         const initialSize = initialBox.getSize(new THREE.Vector3());
-        const targetLength =9;
+        const targetLength = 9;
         const scale = targetLength / initialSize.z;
 
         model.scale.setScalar(scale);
@@ -102,6 +115,10 @@ export class Truck {
           .map((name) => model.getObjectByName(name))
           .filter(Boolean);
         this.root.add(model);
+        model.updateMatrixWorld(true);
+
+        this.placeCargoOnTrailer(model);
+
         this.setProgress(0, 1);
         this.root.updateMatrixWorld(true);
 
@@ -111,14 +128,19 @@ export class Truck {
           this.wheelRadius = wheelSize.y / 2;
         }
 
-        this.root.visible = false;
-        this.state = 'absent';
+        this.root.visible = true;
+        this.state = 'parked';
       },
       undefined,
       (error) => {
         console.error('Error loading truck:', error);
       }
     );
+  }
+
+  placeCargoOnTrailer(model) {
+    this.cargoRoot.position.set(-1, 1.65, 0);
+    return;
   }
 
   setProgress(
