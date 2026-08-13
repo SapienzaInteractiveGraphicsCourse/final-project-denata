@@ -1,5 +1,15 @@
 import * as THREE from 'three';
 import { Tween, Easing } from '@tweenjs/tween.js';
+import { CargoSlots } from './CargoSlots.js';
+
+const SHIP_SLOT_LAYOUT = [
+  { id: 'S1', position: new THREE.Vector3(-8, 4.5, -2.5), rotationY: Math.PI / 2 },
+  { id: 'S2', position: new THREE.Vector3(0, 4.5, -2.5), rotationY: Math.PI / 2 },
+  { id: 'S3', position: new THREE.Vector3(8, 4.5, -2.5), rotationY: Math.PI / 2 },
+  { id: 'S4', position: new THREE.Vector3(-8, 4.5, 2.5), rotationY: Math.PI / 2 },
+  { id: 'S5', position: new THREE.Vector3(0, 4.5, 2.5), rotationY: Math.PI / 2 },
+  { id: 'S6', position: new THREE.Vector3(8, 4.5, 2.5), rotationY: Math.PI / 2 }
+];
 
 export class Ship {
   constructor() {
@@ -17,19 +27,12 @@ export class Ship {
     this.cargoRoot.name = 'ShipCargo';
     this.root.add(this.cargoRoot);
 
+    this.slots = new CargoSlots(this.cargoRoot, SHIP_SLOT_LAYOUT);
+
     this.root.position.set(-15, 0, 0);
 
     this.isDocked = true;
     this.tween = null;
-  }
-
-  addCargo(cargo, position) {
-    cargo.position.copy(position);
-    this.cargoRoot.add(cargo);
-  }
-
-  detachCargo(cargo, newParent) {
-    newParent.attach(cargo);
   }
 
   toggle() {

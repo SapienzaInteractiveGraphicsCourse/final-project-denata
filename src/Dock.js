@@ -1,4 +1,34 @@
 import * as THREE from 'three';
+import { CargoSlots } from './CargoSlots.js';
+
+const DEPOT_ORIGIN = { x: -16, y: 2, z: 42 };
+const DEPOT_SPACING = 8;
+const DEPOT_COLS = 3;
+const DEPOT_ROWS = 4;
+
+function createDepotLayout() {
+  const layout = [];
+  let index = 1;
+  const colOffset = (DEPOT_COLS - 1) / 2;
+  const rowOffset = (DEPOT_ROWS - 1) / 2;
+
+  for (let row = 0; row < DEPOT_ROWS; row += 1) {
+    for (let col = 0; col < DEPOT_COLS; col += 1) {
+      layout.push({
+        id: `D${index}`,
+        position: new THREE.Vector3(
+          DEPOT_ORIGIN.x + (col - colOffset) * DEPOT_SPACING,
+          DEPOT_ORIGIN.y,
+          DEPOT_ORIGIN.z + (row - rowOffset) * DEPOT_SPACING
+        ),
+        rotationY: 0
+      });
+      index += 1;
+    }
+  }
+
+  return layout;
+}
 
 export class Dock {
   constructor() {
@@ -8,6 +38,7 @@ export class Dock {
     this.createPlatform();
     this.createRoad();
     this.createRoadMarkings();
+    this.createDepot();
   }
 
   createPlatform() {
@@ -50,49 +81,49 @@ export class Dock {
     this.road.name = 'Road';
 
     const horizontalRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(50, 0.06, 8),
+      new THREE.BoxGeometry(50, 0.06, 6),
       roadMaterial
     );
     horizontalRoad.position.set(-65, 2.03, 20);
     this.road.add(horizontalRoad);
 
     const curvedRoad = new THREE.Mesh(
-      this.createQuarterTurn(4, 12),
+      this.createQuarterTurn(5, 11),
       roadMaterial
     );
     curvedRoad.position.set(-40, 2, 28);
     this.road.add(curvedRoad);
 
     const verticalRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(8, 0.06, 117),
+      new THREE.BoxGeometry(6, 0.06, 117),
       roadMaterial
     );
     verticalRoad.position.set(-32, 2.03, 86.5);
     this.road.add(verticalRoad);
 
     const topRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(32, 0.06, 8),
+      new THREE.BoxGeometry(32, 0.06, 6),
       roadMaterial
     );
     topRoad.position.set(-24, 2.03, 20);
     this.road.add(topRoad);
 
     const topRightTurn = new THREE.Mesh(
-      this.createQuarterTurn(4, 12),
+      this.createQuarterTurn(5, 11),
       roadMaterial
     );
     topRightTurn.position.set(-8, 2, 28);
     this.road.add(topRightTurn);
 
     const rightRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(8, 0.06, 28),
+      new THREE.BoxGeometry(6, 0.06, 28),
       roadMaterial
     );
     rightRoad.position.set(0, 2.03, 42);
     this.road.add(rightRoad);
 
     const bottomRightTurn = new THREE.Mesh(
-      this.createQuarterTurn(4, 12),
+      this.createQuarterTurn(5, 11),
       roadMaterial
     );
     bottomRightTurn.position.set(-8, 2, 56);
@@ -100,14 +131,14 @@ export class Dock {
     this.road.add(bottomRightTurn);
 
     const bottomRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(16, 0.06, 8),
+      new THREE.BoxGeometry(16, 0.06, 6),
       roadMaterial
     );
     bottomRoad.position.set(-16, 2.03, 64);
     this.road.add(bottomRoad);
 
     const bottomLeftTurn = new THREE.Mesh(
-      this.createQuarterTurn(4, 12),
+      this.createQuarterTurn(5, 11),
       roadMaterial
     );
     bottomLeftTurn.position.set(-24, 2, 72);
@@ -205,5 +236,13 @@ export class Dock {
     }
 
     this.root.add(this.roadMarkings);
+  }
+
+  createDepot() {
+    this.depotRoot = new THREE.Group();
+    this.depotRoot.name = 'Depot';
+    this.root.add(this.depotRoot);
+
+    this.depotSlots = new CargoSlots(this.depotRoot, createDepotLayout());
   }
 }
