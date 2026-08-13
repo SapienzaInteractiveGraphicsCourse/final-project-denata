@@ -62,6 +62,11 @@ const crane = new Crane();
 crane.root.position.set(12, 2, 42);
 scene.add(crane.root);
 
+const craneControls = {
+  raiseBoom: false,
+  lowerBoom: false
+};
+
 // SHIP PLACEHOLDER
 const ship = new Ship();
 scene.add(ship.root);
@@ -124,6 +129,23 @@ window.addEventListener('keydown', (event) => {
     truck.toggle();
   }
 
+  if (event.code === 'KeyW') {
+    craneControls.raiseBoom = true;
+  }
+
+  if (event.code === 'KeyS') {
+    craneControls.lowerBoom = true;
+  }
+});
+
+window.addEventListener('keyup', (event) => {
+  if (event.code === 'KeyW') {
+    craneControls.raiseBoom = false;
+  }
+
+  if (event.code === 'KeyS') {
+    craneControls.lowerBoom = false;
+  }
 });
 
 // RESIZE
@@ -135,8 +157,12 @@ window.addEventListener('resize', () => {
 
 // LOOP
 function animate(time) {
+  const boomDirection = Number(craneControls.lowerBoom)
+    - Number(craneControls.raiseBoom);
+
   ship.update(time);
   truck.update(time);
+  crane.update(time, boomDirection);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
