@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Ship } from './Ship.js';
 import { Truck } from './Truck.js';
 import { Crane } from './Crane.js';
 import { Dock } from './Dock.js';
+import { ContainerManager } from './ContainerManager.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -84,28 +84,15 @@ export const cargoAreas = {
   truck: truck.slots
 };
 
-// CONTAINER IMPORTED FROM GLB
-const loader = new GLTFLoader();
+const containerManager = new ContainerManager();
 
-loader.load(
-  '/assets/models/20ft_container.glb',
-
-  (gltf) => {
-    const template = gltf.scene;
-
-    const box = new THREE.Box3().setFromObject(template);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-
-    console.log('Container loaded:', template);
-    console.log(
-      `Model dimensions: x=${size.x.toFixed(2)}, y=${size.y.toFixed(2)}, z=${size.z.toFixed(2)}`
-    );
-
+containerManager
+  .load()
+  .then(() => {
     const shipSlotIds = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
     shipSlotIds.forEach((slotId, index) => {
-      const cargo = template.clone(true);
+      const cargo = containerManager.createRandom();
       cargo.name = `ShipContainer-${index + 1}`;
       ship.slots.place(cargo, slotId);
     });
@@ -114,24 +101,20 @@ loader.load(
     let depotSlotId = dock.depotSlots.findEmpty();
 
     while (depotSlotId) {
-      const cargo = template.clone(true);
+      const cargo = containerManager.createRandom();
       cargo.name = `DepotContainer-${depotIndex}`;
       dock.depotSlots.place(cargo, depotSlotId);
       depotIndex += 1;
       depotSlotId = dock.depotSlots.findEmpty();
     }
 
-    const truckCargo = template.clone(true);
+    const truckCargo = containerManager.createRandom();
     truckCargo.name = 'TruckContainer-1';
     truck.slots.place(truckCargo, 'T1');
-  },
-
-  undefined,
-
-  (error) => {
+  })
+  .catch((error) => {
     console.error('Error loading container:', error);
-  }
-);
+  });
 
 // SPACE = ARRIVE / DEPART
 window.addEventListener('keydown', (event) => {

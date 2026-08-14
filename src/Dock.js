@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CargoSlots } from './CargoSlots.js';
 
-const DEPOT_ORIGIN = { x: -16, y: 2, z: 42 };
+const DEPOT_ORIGIN = { x: -10, y: 2, z: 42 };
 const DEPOT_SPACING = 8;
 const DEPOT_COLS = 3;
 const DEPOT_ROWS = 4;
@@ -17,7 +17,7 @@ function createDepotLayout() {
       layout.push({
         id: `D${index}`,
         position: new THREE.Vector3(
-          DEPOT_ORIGIN.x + (col - colOffset) * DEPOT_SPACING,
+          DEPOT_ORIGIN.x + (col - colOffset) * DEPOT_SPACING/2.5,
           DEPOT_ORIGIN.y,
           DEPOT_ORIGIN.z + (row - rowOffset) * DEPOT_SPACING
         ),
