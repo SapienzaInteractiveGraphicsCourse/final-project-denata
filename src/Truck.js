@@ -24,7 +24,7 @@ export class Truck {
         position: new THREE.Vector3(0, 0, 0),
         rotationY: Math.PI / 2
       }
-    ]);
+    ], 1);
 
     const roadHeight = 2.06;
     const turnOffset = 8 * 0.5522847498;

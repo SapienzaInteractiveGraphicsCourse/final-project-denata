@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { CargoSlots } from './CargoSlots.js';
 
 const DEPOT_ORIGIN = { x: -10, y: 2, z: 42 };
-const DEPOT_SPACING = 8;
+const DEPOT_COL_SPACING = 3.2;
+const DEPOT_ROW_SPACING = 8;
 const DEPOT_COLS = 3;
 const DEPOT_ROWS = 4;
 
@@ -17,9 +18,9 @@ function createDepotLayout() {
       layout.push({
         id: `D${index}`,
         position: new THREE.Vector3(
-          DEPOT_ORIGIN.x + (col - colOffset) * DEPOT_SPACING/2.5,
+          DEPOT_ORIGIN.x + (col - colOffset) * DEPOT_COL_SPACING,
           DEPOT_ORIGIN.y,
-          DEPOT_ORIGIN.z + (row - rowOffset) * DEPOT_SPACING
+          DEPOT_ORIGIN.z + (row - rowOffset) * DEPOT_ROW_SPACING
         ),
         rotationY: 0
       });
@@ -243,6 +244,6 @@ export class Dock {
     this.depotRoot.name = 'Depot';
     this.root.add(this.depotRoot);
 
-    this.depotSlots = new CargoSlots(this.depotRoot, createDepotLayout());
+    this.depotSlots = new CargoSlots(this.depotRoot, createDepotLayout(), 3);
   }
 }

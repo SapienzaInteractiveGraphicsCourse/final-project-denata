@@ -11,6 +11,8 @@ export class Crane {
     this.wheelRadius = 0;
     this.boomAnimation = null;
     this.lastUpdateTime = null;
+    this.heldCargo = null;
+    this.cargoAnchor = null;
     this.travelSpeed = 1.5;
     this.minTravelZ = 18;
     this.maxTravelZ = 70;
@@ -246,7 +248,94 @@ export class Crane {
       spreaderAnchorPosition: verticalBottom.clone()
     };
 
+    this.setupCargoAnchor(spreader);
     this.updateBoomConnections();
+  }
+
+  // Hook point at the bottom of the spreader; held containers parent here.
+  setupCargoAnchor(spreader) {
+    this.cargoAnchor = new THREE.Object3D();
+    this.cargoAnchor.name = 'CraneCargo';
+    spreader.add(this.cargoAnchor);
+
+    spreader.updateMatrixWorld(true);
+    const spreaderBox = new THREE.Box3().setFromObject(spreader);
+    const bottom = new THREE.Vector3(
+      (spreaderBox.min.x + spreaderBox.max.x) / 2,
+      spreaderBox.min.y,
+      (spreaderBox.min.z + spreaderBox.max.z) / 2
+    );
+    spreader.worldToLocal(bottom);
+    this.cargoAnchor.position.copy(bottom);
+  }
+
+  // Parent cargo under the spreader, upright and full size despite the scaled GLB.
+  attachCargo(cargo) {
+    if (!this.cargoAnchor || this.heldCargo) {
+      return false;
+    }
+
+    this.cargoAnchor.add(cargo);
+    this.cargoAnchor.updateMatrixWorld(true);
+
+    // Undo the crane model scale so the container keeps its world size.
+    const parentScale = this.cargoAnchor.getWorldScale(new THREE.Vector3());
+    cargo.scale.set(
+      1 / parentScale.x,
+      1 / parentScale.y,
+      1 / parentScale.z
+    );
+
+    // Inverse parent rotation keeps the container world-upright.
+    const worldRotation = this.cargoAnchor.getWorldQuaternion(new THREE.Quaternion());
+    cargo.quaternion.copy(worldRotation.clone().invert());
+    cargo.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(cargo);
+    const size = box.getSize(new THREE.Vector3());
+    const hangPosition = this.cargoAnchor.getWorldPosition(new THREE.Vector3());
+    hangPosition.y -= size.y;
+    cargo.position.copy(this.cargoAnchor.worldToLocal(hangPosition));
+    this.heldCargo = cargo;
+
+    return true;
+  }
+
+  // Unparent cargo but keep its world pose so it can fall or snap to a slot.
+  detachCargo() {
+    if (!this.heldCargo) {
+      return null;
+    }
+
+    const cargo = this.heldCargo;
+    this.heldCargo = null;
+    cargo.updateMatrixWorld(true);
+
+    const worldPosition = cargo.getWorldPosition(new THREE.Vector3());
+    const worldQuaternion = cargo.getWorldQuaternion(new THREE.Quaternion());
+    const worldScale = cargo.getWorldScale(new THREE.Vector3());
+
+    this.cargoAnchor.remove(cargo);
+    cargo.position.copy(worldPosition);
+    cargo.quaternion.copy(worldQuaternion);
+    cargo.scale.copy(worldScale);
+
+    return cargo;
+  }
+
+  // Used by cargo proximity checks; falls back to the spreader before the model loads.
+  getSpreaderWorldPosition() {
+    if (this.cargoAnchor) {
+      return this.cargoAnchor.getWorldPosition(new THREE.Vector3());
+    }
+
+    const spreader = this.parts.Crane_Spreader;
+
+    if (!spreader) {
+      return null;
+    }
+
+    return spreader.getWorldPosition(new THREE.Vector3());
   }
 
   getMeshEnds(mesh, axis) {

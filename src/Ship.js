@@ -27,7 +27,7 @@ export class Ship {
     this.cargoRoot.name = 'ShipCargo';
     this.root.add(this.cargoRoot);
 
-    this.slots = new CargoSlots(this.cargoRoot, SHIP_SLOT_LAYOUT);
+    this.slots = new CargoSlots(this.cargoRoot, SHIP_SLOT_LAYOUT, 3);
 
     this.root.position.set(-15, 0, 0);
 

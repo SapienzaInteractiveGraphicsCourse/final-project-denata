@@ -5,6 +5,7 @@ import { Truck } from './Truck.js';
 import { Crane } from './Crane.js';
 import { Dock } from './Dock.js';
 import { ContainerManager } from './ContainerManager.js';
+import { CargoInteraction } from './CargoInteraction.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -84,6 +85,14 @@ export const cargoAreas = {
   truck: truck.slots
 };
 
+const cargoInteraction = new CargoInteraction({
+  crane,
+  cargoAreas,
+  truck,
+  scene,
+  promptElement: document.getElementById('prompt')
+});
+
 const containerManager = new ContainerManager();
 
 containerManager
@@ -107,10 +116,6 @@ containerManager
       depotIndex += 1;
       depotSlotId = dock.depotSlots.findEmpty();
     }
-
-    const truckCargo = containerManager.createRandom();
-    truckCargo.name = 'TruckContainer-1';
-    truck.slots.place(truckCargo, 'T1');
   })
   .catch((error) => {
     console.error('Error loading container:', error);
@@ -159,6 +164,18 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'KeyF') {
     craneControls.lowerSpreader = true;
   }
+
+  if (event.code === 'KeyE' && !event.repeat) {
+    cargoInteraction.tryUseE();
+  }
+
+  if (event.code === 'KeyC' && !event.repeat) {
+    cargoInteraction.tryLoadTruck();
+  }
+
+  if (event.code === 'KeyQ' && !event.repeat) {
+    cargoInteraction.tryDrop();
+  }
 });
 
 window.addEventListener('keyup', (event) => {
@@ -203,7 +220,12 @@ window.addEventListener('resize', () => {
 });
 
 // LOOP
+let lastTime = null;
+
 function animate(time) {
+  const deltaTime = Math.min((time - (lastTime ?? time)) / 1000, 0.1);
+  lastTime = time;
+
   const boomDirection = Number(craneControls.lowerBoom)
     - Number(craneControls.raiseBoom);
   const rotationDirection = Number(craneControls.rotateRight)
@@ -222,6 +244,7 @@ function animate(time) {
     travelDirection,
     hoistDirection
   );
+  cargoInteraction.update(deltaTime);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
