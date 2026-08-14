@@ -14,6 +14,15 @@
       background: rgba(255,255,255,.85);
       border-radius: 6px;
     }
+    #prompt {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      background: rgba(255,255,255,.85);
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -23,8 +32,12 @@
     W / S: raise / lower the crane boom<br />
     A / D: rotate the crane upper body<br />
     UP / DOWN: move the crane<br />
-    R / F: raise / lower the spreader
+    R / F: raise / lower the spreader<br />
+    E: pick up / place a container<br />
+    C: load the container onto the truck<br />
+    Q: drop the container
   </div>
+  <div id="prompt" hidden></div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
