@@ -13,6 +13,8 @@ export class Truck {
     this.motion = { progress: 0 };
     this.wheels = [];
     this.wheelRadius = 0;
+    this.departureTimer = null;
+    this.onDeparted = null;
 
     this.cargoRoot = new THREE.Group();
     this.cargoRoot.name = 'TruckCargo';
@@ -188,6 +190,8 @@ export class Truck {
   depart() {
     if (this.state !== 'parked') return;
 
+    clearTimeout(this.departureTimer);
+    this.departureTimer = null;
     this.state = 'departing';
     this.motion.progress = 0;
     this.animateTo(
@@ -196,6 +200,7 @@ export class Truck {
       () => {
         this.root.visible = false;
         this.state = 'absent';
+        this.onDeparted?.();
       },
       this.departurePath,
       8000
@@ -226,6 +231,11 @@ export class Truck {
     } else if (this.state === 'absent') {
       this.arrive();
     }
+  }
+
+  scheduleDeparture() {
+    clearTimeout(this.departureTimer);
+    this.departureTimer = setTimeout(() => this.depart(), 500);
   }
 
   update(time) {

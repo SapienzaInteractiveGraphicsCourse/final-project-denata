@@ -95,6 +95,19 @@ const cargoInteraction = new CargoInteraction({
 
 const containerManager = new ContainerManager();
 
+truck.onDeparted = async () => {
+  truck.slots.remove('T1');
+  await containerManager.load();
+
+  if (Math.random() < 0.2) {
+    const cargo = containerManager.createRandom();
+    cargo.name = 'TruckContainer';
+    truck.slots.place(cargo, 'T1');
+  }
+
+  truck.arrive();
+};
+
 containerManager
   .load()
   .then(() => {
@@ -107,14 +120,17 @@ containerManager
     });
 
     let depotIndex = 1;
-    let depotSlotId = dock.depotSlots.findEmpty();
+    const stackSizes = [0, 1, 1, 1, 2, 2, 2, 3];
 
-    while (depotSlotId) {
-      const cargo = containerManager.createRandom();
-      cargo.name = `DepotContainer-${depotIndex}`;
-      dock.depotSlots.place(cargo, depotSlotId);
-      depotIndex += 1;
-      depotSlotId = dock.depotSlots.findEmpty();
+    for (const slotId of dock.depotSlots.slots.keys()) {
+      const stackSize = stackSizes[Math.floor(Math.random() * stackSizes.length)];
+
+      for (let level = 0; level < stackSize; level += 1) {
+        const cargo = containerManager.createRandom();
+        cargo.name = `DepotContainer-${depotIndex}`;
+        dock.depotSlots.place(cargo, slotId);
+        depotIndex += 1;
+      }
     }
   })
   .catch((error) => {

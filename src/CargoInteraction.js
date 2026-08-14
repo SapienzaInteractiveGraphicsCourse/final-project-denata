@@ -170,8 +170,10 @@ export class CargoInteraction {
     }
 
     let cargo = null;
+    let pickedFromTruck = false;
 
     if (this.pickTarget.type === 'slot') {
+      pickedFromTruck = this.pickTarget.slots === this.cargoAreas.truck;
       cargo = this.pickTarget.slots.remove(this.pickTarget.slotId);
     } else {
       cargo = this.pickTarget.cargo;
@@ -181,6 +183,10 @@ export class CargoInteraction {
 
     if (cargo) {
       this.crane.attachCargo(cargo);
+
+      if (pickedFromTruck) {
+        this.truck.scheduleDeparture();
+      }
     }
 
     this.refreshTargets();
@@ -204,7 +210,9 @@ export class CargoInteraction {
     }
 
     const cargo = this.crane.detachCargo();
-    this.cargoAreas.truck.place(cargo, 'T1');
+    if (this.cargoAreas.truck.place(cargo, 'T1')) {
+      this.truck.scheduleDeparture();
+    }
     this.refreshTargets();
     this.updatePrompt();
   }
