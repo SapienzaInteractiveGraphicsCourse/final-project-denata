@@ -13,6 +13,7 @@ export class Crane {
     this.lastUpdateTime = null;
     this.heldCargo = null;
     this.cargoAnchor = null;
+    this.restUpperBodyYaw = 0;
     this.travelSpeed = 1.5;
     this.minTravelZ = 18;
     this.maxTravelZ = 70;
@@ -84,6 +85,7 @@ export class Crane {
 
         // Keep the upper body facing the direction used before the crane was turned.
         this.parts.Platform_Body.rotation.y = Math.PI / 2;
+        this.restUpperBodyYaw = this.parts.Platform_Body.rotation.y;
 
         this.model = model;
         this.root.add(model);
@@ -260,16 +262,15 @@ export class Crane {
 
     spreader.updateMatrixWorld(true);
     const spreaderBox = new THREE.Box3().setFromObject(spreader);
-    const bottom = new THREE.Vector3(
-      (spreaderBox.min.x + spreaderBox.max.x) / 2,
-      spreaderBox.min.y,
-      (spreaderBox.min.z + spreaderBox.max.z) / 2
-    );
+    // Hook = bottom center of the spreader, not the mesh origin.
+    const bottom = spreaderBox.getCenter(new THREE.Vector3());
+    bottom.y = spreaderBox.min.y;
+
     spreader.worldToLocal(bottom);
     this.cargoAnchor.position.copy(bottom);
   }
 
-  // Parent cargo under the spreader, upright and full size despite the scaled GLB.
+  // Hang the container from the hook, full size and aligned with the spreader.
   attachCargo(cargo) {
     if (!this.cargoAnchor || this.heldCargo) {
       return false;
@@ -280,22 +281,16 @@ export class Crane {
 
     // Undo the crane model scale so the container keeps its world size.
     const parentScale = this.cargoAnchor.getWorldScale(new THREE.Vector3());
-    cargo.scale.set(
-      1 / parentScale.x,
-      1 / parentScale.y,
-      1 / parentScale.z
-    );
+    cargo.scale.setScalar(1 / parentScale.x);
+    cargo.rotation.set(0, Math.PI / 2, 0);
 
-    // Inverse parent rotation keeps the container world-upright.
-    const worldRotation = this.cargoAnchor.getWorldQuaternion(new THREE.Quaternion());
-    cargo.quaternion.copy(worldRotation.clone().invert());
     cargo.updateMatrixWorld(true);
-
-    const box = new THREE.Box3().setFromObject(cargo);
-    const size = box.getSize(new THREE.Vector3());
+    const height = new THREE.Box3().setFromObject(cargo).getSize(new THREE.Vector3()).y;
+    // Origin is at the container bottom; move it down so the top touches the hook.
     const hangPosition = this.cargoAnchor.getWorldPosition(new THREE.Vector3());
-    hangPosition.y -= size.y;
+    hangPosition.y -= height;
     cargo.position.copy(this.cargoAnchor.worldToLocal(hangPosition));
+
     this.heldCargo = cargo;
 
     return true;
@@ -309,16 +304,7 @@ export class Crane {
 
     const cargo = this.heldCargo;
     this.heldCargo = null;
-    cargo.updateMatrixWorld(true);
-
-    const worldPosition = cargo.getWorldPosition(new THREE.Vector3());
-    const worldQuaternion = cargo.getWorldQuaternion(new THREE.Quaternion());
-    const worldScale = cargo.getWorldScale(new THREE.Vector3());
-
-    this.cargoAnchor.remove(cargo);
-    cargo.position.copy(worldPosition);
-    cargo.quaternion.copy(worldQuaternion);
-    cargo.scale.copy(worldScale);
+    this.root.parent.attach(cargo);
 
     return cargo;
   }
