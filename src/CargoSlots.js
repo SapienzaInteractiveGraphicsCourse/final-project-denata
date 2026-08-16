@@ -3,19 +3,52 @@ import * as THREE from 'three';
 export class CargoSlots {
   constructor(parent, definitions, maxStack = 3) {
     this.parent = parent;
+    this.slots = new Map();
+
+    this.setLayout(definitions, maxStack);
+  }
+
+  setLayout(definitions, maxStack = this.maxStack) {
+    const cargos = [...this.slots.values()]
+      .flatMap((slot) => slot.stack);
+
+    this.slots.forEach((slot) => {
+      this.parent.remove(slot.anchor);
+    });
+
     this.maxStack = maxStack;
     this.stackHeight = 0;
-    this.slots = new Map();
+    this.slots.clear();
 
     definitions.forEach(({ id, position, rotationY = 0 }) => {
       const anchor = new THREE.Object3D();
       anchor.name = `Slot_${id}`;
       anchor.position.copy(position);
       anchor.rotation.y = rotationY;
-      parent.add(anchor);
+      this.parent.add(anchor);
 
       this.slots.set(id, { anchor, stack: [] });
     });
+
+    const slotIds = [...this.slots.keys()];
+
+    while (cargos.length > 0) {
+      const availableSlots = slotIds
+        .filter((slotId) => this.hasRoom(slotId))
+        .sort(() => Math.random() - 0.5);
+
+      if (availableSlots.length === 0) {
+        break;
+      }
+
+      availableSlots.forEach((slotId) => {
+        const cargo = cargos.shift();
+
+        if (cargo) {
+          this.place(cargo, slotId);
+        }
+      });
+    }
   }
 
   measureStackHeight(cargo) {

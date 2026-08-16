@@ -75,7 +75,7 @@ const craneControls = {
   lowerSpreader: false
 };
 
-// SHIP PLACEHOLDER
+// SHIP
 const ship = new Ship();
 scene.add(ship.root);
 
@@ -124,13 +124,19 @@ truck.onDeparted = async () => {
 containerManager
   .load()
   .then(() => {
-    const shipSlotIds = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
+    const shipSlotIds = [...ship.slots.slots.keys()];
+    const singleStackCount = Math.floor(shipSlotIds.length / 3);
+    const shipStackSizes = shipSlotIds
+      .map((slotId, index) => index < singleStackCount ? 1 : 2)
+      .sort(() => Math.random() - 0.5);
 
     shipSlotIds.forEach((slotId, index) => {
-      const cargo = containerManager.createRandom();
-      cargo.name = `ShipContainer-${index + 1}`;
-      ship.slots.place(cargo, slotId);
-      physics.addContainer(cargo, 'slotted');
+      for (let level = 0; level < shipStackSizes[index]; level += 1) {
+        const cargo = containerManager.createRandom();
+        cargo.name = `ShipContainer-${slotId}-${level + 1}`;
+        ship.slots.place(cargo, slotId);
+        physics.addContainer(cargo, 'slotted');
+      }
     });
 
     let depotIndex = 1;
