@@ -3,25 +3,23 @@ import * as THREE from 'three';
 const PICK_RADIUS = 3;
 const PLACE_RADIUS = 3;
 const TRUCK_RADIUS = 3;
-const GRAVITY = 18;
-const GROUND_Y = 2;
 
 export class CargoInteraction {
-  constructor({ crane, cargoAreas, truck, scene, promptElement }) {
+  constructor({ crane, cargoAreas, truck, scene, physics, promptElement }) {
     this.crane = crane;
     this.cargoAreas = cargoAreas;
     this.truck = truck;
     this.scene = scene;
+    this.physics = physics;
     this.promptElement = promptElement;
-    this.looseCargos = [];
-    this.falling = [];
     this.pickTarget = null;
     this.placeTarget = null;
     this.truckTarget = false;
+
+    this.physics.onKnockFree = (cargo) => this.knockFree(cargo);
   }
 
-  update(deltaTime) {
-    this.updateFalling(deltaTime);
+  update() {
     this.refreshTargets();
     this.updatePrompt();
   }
@@ -66,7 +64,7 @@ export class CargoInteraction {
       }
     }
 
-    this.looseCargos.forEach((cargo) => {
+    this.physics.getFreeCargos().forEach((cargo) => {
       cargo.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(cargo);
       const center = box.getCenter(new THREE.Vector3());
@@ -177,12 +175,11 @@ export class CargoInteraction {
       cargo = this.pickTarget.slots.remove(this.pickTarget.slotId);
     } else {
       cargo = this.pickTarget.cargo;
-      this.looseCargos = this.looseCargos.filter((item) => item !== cargo);
-      cargo.removeFromParent();
     }
 
     if (cargo) {
       this.crane.attachCargo(cargo);
+      this.physics.setHeld(cargo);
 
       if (pickedFromTruck) {
         this.truck.scheduleDeparture();
@@ -200,6 +197,7 @@ export class CargoInteraction {
 
     const cargo = this.crane.detachCargo();
     this.placeTarget.slots.place(cargo, this.placeTarget.slotId);
+    this.physics.setSlotted(cargo);
     this.refreshTargets();
     this.updatePrompt();
   }
@@ -211,6 +209,7 @@ export class CargoInteraction {
 
     const cargo = this.crane.detachCargo();
     if (this.cargoAreas.truck.place(cargo, 'T1')) {
+      this.physics.setSlotted(cargo);
       this.truck.scheduleDeparture();
     }
     this.refreshTargets();
@@ -223,27 +222,27 @@ export class CargoInteraction {
     }
 
     const cargo = this.crane.detachCargo();
-    this.scene.add(cargo);
-    this.falling.push({ cargo, velocityY: 0 });
+    this.physics.setFree(cargo);
     this.refreshTargets();
     this.updatePrompt();
   }
 
-  updateFalling(deltaTime) {
-    const stillFalling = [];
+  knockFree(cargo) {
+    if (cargo.userData.physicsState !== 'slotted') {
+      return;
+    }
 
-    this.falling.forEach((item) => {
-      item.velocityY -= GRAVITY * deltaTime;
-      item.cargo.position.y += item.velocityY * deltaTime;
+    for (const slots of Object.values(this.cargoAreas)) {
+      for (const [slotId, slot] of slots.slots) {
+        if (slots.peek(slotId) !== cargo) {
+          continue;
+        }
 
-      if (item.cargo.position.y <= GROUND_Y) {
-        item.cargo.position.y = GROUND_Y;
-        this.looseCargos.push(item.cargo);
-      } else {
-        stillFalling.push(item);
+        this.scene.attach(cargo);
+        slot.stack.pop();
+        this.physics.setFree(cargo);
+        return;
       }
-    });
-
-    this.falling = stillFalling;
+    }
   }
 }

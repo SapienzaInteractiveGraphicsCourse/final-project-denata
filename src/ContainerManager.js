@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const CONTAINER_SIZE = new THREE.Vector3(2.54, 2.7, 6.11);
+export const CONTAINER_SIZE = new THREE.Vector3(2.54, 2.7, 6.11);
 
 const CONTAINER_TYPES = [
   { id: 'classic', url: '/assets/models/20ft_container.glb', weight: 2 },

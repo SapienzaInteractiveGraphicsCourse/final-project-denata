@@ -6,6 +6,7 @@ import { Crane } from './Crane.js';
 import { Dock } from './Dock.js';
 import { ContainerManager } from './ContainerManager.js';
 import { CargoInteraction } from './CargoInteraction.js';
+import { Physics } from './Physics.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -78,6 +79,11 @@ const craneControls = {
 const ship = new Ship();
 scene.add(ship.root);
 
+// PHYSICS
+const physics = new Physics();
+physics.addDock(dock);
+physics.addShip(ship);
+
 // CARGO AREAS
 export const cargoAreas = {
   ship: ship.slots,
@@ -90,19 +96,26 @@ const cargoInteraction = new CargoInteraction({
   cargoAreas,
   truck,
   scene,
+  physics,
   promptElement: document.getElementById('prompt')
 });
 
 const containerManager = new ContainerManager();
 
 truck.onDeparted = async () => {
-  truck.slots.remove('T1');
+  const departedCargo = truck.slots.remove('T1');
+
+  if (departedCargo) {
+    physics.removeContainer(departedCargo);
+  }
+
   await containerManager.load();
 
   if (Math.random() < 0.2) {
     const cargo = containerManager.createRandom();
     cargo.name = 'TruckContainer';
     truck.slots.place(cargo, 'T1');
+    physics.addContainer(cargo, 'slotted');
   }
 
   truck.arrive();
@@ -117,6 +130,7 @@ containerManager
       const cargo = containerManager.createRandom();
       cargo.name = `ShipContainer-${index + 1}`;
       ship.slots.place(cargo, slotId);
+      physics.addContainer(cargo, 'slotted');
     });
 
     let depotIndex = 1;
@@ -129,6 +143,7 @@ containerManager
         const cargo = containerManager.createRandom();
         cargo.name = `DepotContainer-${depotIndex}`;
         dock.depotSlots.place(cargo, slotId);
+        physics.addContainer(cargo, 'slotted');
         depotIndex += 1;
       }
     }
@@ -260,7 +275,8 @@ function animate(time) {
     travelDirection,
     hoistDirection
   );
-  cargoInteraction.update(deltaTime);
+  cargoInteraction.update();
+  physics.update(deltaTime, crane);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);

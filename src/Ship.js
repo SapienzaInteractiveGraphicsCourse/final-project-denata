@@ -21,6 +21,7 @@ export class Ship {
     );
 
     mesh.position.y = 1.5;
+    this.hull = mesh;
     this.root.add(mesh);
 
     this.cargoRoot = new THREE.Group();

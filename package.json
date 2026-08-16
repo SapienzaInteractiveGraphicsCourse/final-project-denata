@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@tweenjs/tween.js": "^25.0.0",
+    "cannon-es": "^0.20.0",
     "three": "^0.185.1"
   },
   "devDependencies": {
