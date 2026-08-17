@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GROUND_Y } from './Physics.js';
 
 export class Crane {
   constructor() {
@@ -477,18 +478,73 @@ export class Crane {
       .add(spreaderOffset);
   }
 
+  getHeldMinY() {
+    if (!this.heldCargo) {
+      return null;
+    }
+
+    this.heldCargo.updateMatrixWorld(true);
+    return new THREE.Box3().setFromObject(this.heldCargo).min.y;
+  }
+
+  tryMove(apply, restore, isBlocked, deltaTime, updateConnections = false) {
+    const wasBlocked = isBlocked?.(0) === true;
+    const previousMinY = this.getHeldMinY();
+    const from = this.heldCargo
+      ? this.heldCargo.getWorldPosition(new THREE.Vector3())
+      : null;
+
+    apply();
+
+    if (updateConnections) {
+      this.updateBoomConnections();
+    }
+
+    const nowMinY = this.getHeldMinY();
+    const goingDown = previousMinY != null && nowMinY != null && nowMinY < previousMinY;
+    const sank = goingDown && nowMinY < GROUND_Y;
+    const speed = from && deltaTime > 0
+      ? from.distanceTo(this.heldCargo.getWorldPosition(new THREE.Vector3())) / deltaTime
+      : 0;
+
+    // Undo a new hit, or any downward move that puts the cargo under the dock.
+    if (sank || (isBlocked?.(speed) && !wasBlocked)) {
+      restore();
+
+      if (updateConnections) {
+        this.updateBoomConnections();
+      }
+    }
+  }
+
   update(
     time,
-    boomDirection = 0,
-    rotationDirection = 0,
-    travelDirection = 0,
-    hoistDirection = 0
+    boomDirection = 0, // W / S: raise / lower the boom
+    rotationDirection = 0, // A / D: rotate the upper body
+    travelDirection = 0, // up / down arrows: move along the dock
+    hoistDirection = 0, // R / F: raise / lower the spreader
+    isBlocked = null
   ) {
     const previousTime = this.lastUpdateTime ?? time;
     const deltaTime = Math.min((time - previousTime) / 1000, 0.1);
     this.lastUpdateTime = time;
 
-    this.move(travelDirection, deltaTime);
+    if (travelDirection !== 0) {
+      const previousZ = this.root.position.z;
+      const previousWheels = this.wheels.map((wheel) => wheel.rotation.x);
+
+      this.tryMove(
+        () => this.move(travelDirection, deltaTime),
+        () => {
+          this.root.position.z = previousZ;
+          this.wheels.forEach((wheel, index) => {
+            wheel.rotation.x = previousWheels[index];
+          });
+        },
+        isBlocked,
+        deltaTime
+      );
+    }
 
     if (!this.boomAnimation) {
       return;
@@ -496,26 +552,65 @@ export class Crane {
 
     const animation = this.boomAnimation;
 
-    animation.upperBody.rotation.y +=
-      rotationDirection * animation.rotationSpeed * deltaTime;
+    if (rotationDirection !== 0) {
+      const previousYaw = animation.upperBody.rotation.y;
 
-    animation.verticalCables.bottomHeight +=
-      hoistDirection * animation.verticalCables.hoistSpeed * deltaTime;
-
-    if (boomDirection !== 0) {
-      const nextAngle = animation.boom.rotation.x
-        + boomDirection * animation.speed * deltaTime;
-
-      animation.boom.rotation.x = THREE.MathUtils.clamp(
-        nextAngle,
-        animation.minAngle,
-        animation.maxAngle
+      this.tryMove(
+        () => {
+          animation.upperBody.rotation.y +=
+            rotationDirection * animation.rotationSpeed * deltaTime;
+        },
+        () => {
+          animation.upperBody.rotation.y = previousYaw;
+        },
+        isBlocked,
+        deltaTime
       );
-      animation.boom.updateMatrix();
     }
 
-    if (boomDirection !== 0 || hoistDirection !== 0) {
-      this.updateBoomConnections();
+    if (boomDirection !== 0) {
+      const previousAngle = animation.boom.rotation.x;
+      const heldMinY = this.getHeldMinY();
+      const onDock = heldMinY != null && heldMinY <= GROUND_Y;
+
+      this.tryMove(
+        () => {
+          animation.boom.rotation.x = THREE.MathUtils.clamp(
+            previousAngle + boomDirection * animation.speed * deltaTime,
+            animation.minAngle,
+            animation.maxAngle
+          );
+          animation.boom.updateMatrix();
+        },
+        () => {
+          animation.boom.rotation.x = previousAngle;
+          animation.boom.updateMatrix();
+        },
+        isBlocked,
+        deltaTime,
+        true
+      ); 
+    }
+
+    if (hoistDirection !== 0) {
+      const previousHeight = animation.verticalCables.bottomHeight;
+      const heldMinY = this.getHeldMinY();
+      const onDock = heldMinY != null && heldMinY <= GROUND_Y;
+
+      if (!(hoistDirection < 0 && onDock)) {
+        this.tryMove(
+          () => {
+            animation.verticalCables.bottomHeight +=
+              hoistDirection * animation.verticalCables.hoistSpeed * deltaTime;
+          },
+          () => {
+            animation.verticalCables.bottomHeight = previousHeight;
+          },
+          isBlocked,
+          deltaTime,
+          true
+        );
+      }
     }
   }
 }
