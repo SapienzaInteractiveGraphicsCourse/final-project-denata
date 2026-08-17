@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Water } from 'three/addons/objects/Water.js';
 import { Ship } from './Ship.js';
 import { Truck } from './Truck.js';
 import { Crane } from './Crane.js';
@@ -45,11 +46,27 @@ sun.position.set(10, 20, 10);
 scene.add(sun);
 
 // SEA
-const sea = new THREE.Mesh(
-  new THREE.BoxGeometry(1200, 0.2, 600),
-  new THREE.MeshStandardMaterial({ color: 0x168aad })
+const waterNormals = new THREE.TextureLoader().load(
+  '/assets/textures/waternormals.jpg'
 );
+waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+
+const sea = new Water(new THREE.PlaneGeometry(1200, 600), {
+  textureWidth: 512,
+  textureHeight: 512,
+  waterNormals,
+  sunDirection: sun.position.clone().normalize(),
+  sunColor: 0x77aacc, //0x555555, //0x9aadb8,
+  waterColor: 0x14505c, // 0x0f4c5c, // 0x1e7a64,
+  distortionScale: 3.5
+});
+sea.rotation.x = -Math.PI / 2;
 sea.position.set(0, -0.2, -295);
+sea.material.uniforms.size.value = 3;
+sea.material.fragmentShader = sea.material.fragmentShader.replace(
+  'reflectionSample + specularLight, reflectance',
+  'reflectionSample + specularLight, reflectance * 0.25'
+);
 scene.add(sea);
 
 // DOCK
@@ -291,6 +308,7 @@ function animate(time) {
   );
   cargoInteraction.update();
   physics.update(deltaTime, crane, truck);
+  sea.material.uniforms.time.value += deltaTime;
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
