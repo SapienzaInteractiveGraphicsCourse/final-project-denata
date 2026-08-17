@@ -15,6 +15,11 @@ export class Truck {
     this.wheelRadius = 0;
     this.departureTimer = null;
     this.onDeparted = null;
+    this.blockerElement = null;
+    this.pausedAt = null;
+    this.pauseOffset = 0;
+    this.pendingMove = null;
+    this.activePath = null;
 
     this.cargoRoot = new THREE.Group();
     this.cargoRoot.name = 'TruckCargo';
@@ -174,6 +179,8 @@ export class Truck {
     path = this.departurePath,
     duration = 6000
   ) {
+    this.pausedAt = null;
+    this.pauseOffset = 0;
     this.tween = new Tween(this.motion, false)
       .to({ progress: targetProgress }, duration)
       .easing(Easing.Quadratic.InOut)
@@ -182,16 +189,41 @@ export class Truck {
       })
       .onComplete(() => {
         this.tween = null;
+        this.hideBlocker();
         onComplete();
       })
       .start();
   }
 
   depart() {
-    if (this.state !== 'parked') return;
+    if (this.state === 'departing' || this.pendingMove === 'depart') {
+      return;
+    }
+
+    if (this.state !== 'parked') {
+      return;
+    }
 
     clearTimeout(this.departureTimer);
     this.departureTimer = null;
+    this.pendingMove = 'depart';
+  }
+
+  arrive() {
+    if (this.state === 'arriving' || this.pendingMove === 'arrive') {
+      return;
+    }
+
+    if (this.state !== 'absent') {
+      return;
+    }
+
+    this.pendingMove = 'arrive';
+  }
+
+  startDepart() {
+    this.pendingMove = null;
+    this.activePath = this.departurePath;
     this.state = 'departing';
     this.motion.progress = 0;
     this.animateTo(
@@ -200,6 +232,7 @@ export class Truck {
       () => {
         this.root.visible = false;
         this.state = 'absent';
+        this.activePath = null;
         this.onDeparted?.();
       },
       this.departurePath,
@@ -207,9 +240,9 @@ export class Truck {
     );
   }
 
-  arrive() {
-    if (this.state !== 'absent') return;
-
+  startArrive() {
+    this.pendingMove = null;
+    this.activePath = this.arrivalPath;
     this.state = 'arriving';
     this.motion.progress = 0;
     this.root.visible = true;
@@ -219,10 +252,34 @@ export class Truck {
       1,
       () => {
         this.state = 'parked';
+        this.activePath = null;
       },
       this.arrivalPath,
       9000
     );
+  }
+
+  tryStartPendingMove(physics) {
+    if (!this.pendingMove || !physics) {
+      return;
+    }
+
+    const path = this.pendingMove === 'depart'
+      ? this.departurePath
+      : this.arrivalPath;
+
+    if (physics.isPathBlocked(this, path)) {
+      this.showBlocker();
+      return;
+    }
+
+    this.hideBlocker();
+
+    if (this.pendingMove === 'depart') {
+      this.startDepart();
+    } else {
+      this.startArrive();
+    }
   }
 
   toggle() {
@@ -238,7 +295,49 @@ export class Truck {
     this.departureTimer = setTimeout(() => this.depart(), 500);
   }
 
-  update(time) {
-    this.tween?.update(time);
+  showBlocker() {
+    if (!this.blockerElement) {
+      return;
+    }
+
+    this.blockerElement.textContent =
+      'Move the container blocking the road so the truck can pass.';
+    this.blockerElement.hidden = false;
+  }
+
+  hideBlocker() {
+    if (!this.blockerElement) {
+      return;
+    }
+
+    this.blockerElement.hidden = true;
+  }
+
+  update(time, physics) {
+    if (this.pendingMove) {
+      this.tryStartPendingMove(physics);
+
+      if (this.pendingMove) {
+        return;
+      }
+    }
+
+    const moving = this.state === 'arriving' || this.state === 'departing';
+    const blocked = moving
+      && physics?.isPathBlocked(this, this.activePath, this.motion.progress);
+
+    if (blocked) {
+      this.showBlocker();
+      this.pausedAt = this.pausedAt ?? time;
+      return;
+    }
+
+    if (this.pausedAt != null) {
+      this.pauseOffset += time - this.pausedAt;
+      this.pausedAt = null;
+    }
+
+    this.hideBlocker();
+    this.tween?.update(time - this.pauseOffset);
   }
 }
