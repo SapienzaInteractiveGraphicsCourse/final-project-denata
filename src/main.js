@@ -7,6 +7,7 @@ import { Dock } from './Dock.js';
 import { ContainerManager } from './ContainerManager.js';
 import { CargoInteraction } from './CargoInteraction.js';
 import { Physics } from './Physics.js';
+import { DecorativeShips } from './DecorativeShips.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -78,6 +79,9 @@ const craneControls = {
 // SHIP
 const ship = new Ship();
 scene.add(ship.root);
+
+const decorativeShips = new DecorativeShips(() => !ship.isMoving());
+scene.add(decorativeShips.root);
 
 // PHYSICS
 const physics = new Physics();
@@ -160,8 +164,8 @@ containerManager
 
 // SPACE = ARRIVE / DEPART
 window.addEventListener('keydown', (event) => {
-  if (event.code === 'Space' && !event.repeat) {
-    ship.toggle();
+  if (event.code === 'Space' && !event.repeat && ship.canToggle()) {
+    decorativeShips.waitBeforeShipAction(() => ship.toggle());
   }
 
   if (event.code === 'KeyT' && !event.repeat) {
@@ -273,6 +277,7 @@ function animate(time) {
     - Number(craneControls.lowerSpreader);
 
   ship.update(time);
+  decorativeShips.update(time, deltaTime);
   truck.update(time);
   crane.update(
     time,

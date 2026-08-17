@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
 import { CargoSlots } from './CargoSlots.js';
 
-const WATER_LEVEL = -0.1;
+const WATER_LEVEL = -2;
 
 const SHIP_1_ROUTE = {
   arrivalStart: new THREE.Vector3(-150, WATER_LEVEL, -28),
@@ -295,6 +295,14 @@ export class Ship {
     } else if (this.state === 'absent') {
       this.arrive();
     }
+  }
+
+  canToggle() {
+    return this.state === 'docked' || this.state === 'absent';
+  }
+
+  isMoving() {
+    return this.state === 'arriving' || this.state === 'departing';
   }
 
   update(time) {
