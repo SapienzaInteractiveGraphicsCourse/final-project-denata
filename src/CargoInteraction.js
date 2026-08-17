@@ -5,13 +5,14 @@ const PLACE_RADIUS = 3;
 const TRUCK_RADIUS = 3;
 
 export class CargoInteraction {
-  constructor({ crane, cargoAreas, truck, scene, physics, promptElement }) {
+  constructor({ crane, cargoAreas, truck, scene, physics, promptElement, blockerElement }) {
     this.crane = crane;
     this.cargoAreas = cargoAreas;
     this.truck = truck;
     this.scene = scene;
     this.physics = physics;
     this.promptElement = promptElement;
+    this.blockerElement = blockerElement;
     this.pickTarget = null;
     this.placeTarget = null;
     this.truckTarget = false;
@@ -119,6 +120,11 @@ export class CargoInteraction {
 
   updatePrompt() {
     if (!this.promptElement) {
+      return;
+    }
+
+    if (this.blockerElement && !this.blockerElement.hidden) {
+      this.hidePrompt();
       return;
     }
 

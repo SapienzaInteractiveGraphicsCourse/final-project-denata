@@ -57,11 +57,12 @@ scene.add(dock.root);
 
 // TRUCK
 const truck = new Truck();
+truck.blockerElement = document.getElementById('blocker');
 scene.add(truck.root);
 
 // CRANE
 const crane = new Crane();
-crane.root.position.set(12, 2, 42);
+crane.root.position.set(15, 2, 42);
 scene.add(crane.root);
 
 const craneControls = {
@@ -97,7 +98,8 @@ const cargoInteraction = new CargoInteraction({
   truck,
   scene,
   physics,
-  promptElement: document.getElementById('prompt')
+  promptElement: document.getElementById('prompt'),
+  blockerElement: document.getElementById('blocker')
 });
 
 const containerManager = new ContainerManager();
@@ -267,16 +269,17 @@ function animate(time) {
     - Number(craneControls.lowerSpreader);
 
   ship.update(time);
-  truck.update(time);
+  truck.update(time, physics);
   crane.update(
     time,
     boomDirection,
     rotationDirection,
     travelDirection,
-    hoistDirection
+    hoistDirection,
+    (speed) => physics.isCraneBlocked(crane, speed)
   );
   cargoInteraction.update();
-  physics.update(deltaTime, crane);
+  physics.update(deltaTime, crane, truck);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
