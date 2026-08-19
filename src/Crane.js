@@ -487,8 +487,8 @@ export class Crane {
     return new THREE.Box3().setFromObject(this.heldCargo).min.y;
   }
 
-  tryMove(apply, restore, isBlocked, deltaTime, updateConnections = false) {
-    const wasBlocked = isBlocked?.(0) === true;
+  tryMove(apply, restore, isBlocked, deltaTime) {
+    const overlapBefore = isBlocked?.(0) ?? 0;
     const previousMinY = this.getHeldMinY();
     const from = this.heldCargo
       ? this.heldCargo.getWorldPosition(new THREE.Vector3())
@@ -496,7 +496,7 @@ export class Crane {
 
     apply();
 
-    if (updateConnections) {
+    if (this.boomAnimation) {
       this.updateBoomConnections();
     }
 
@@ -506,12 +506,13 @@ export class Crane {
     const speed = from && deltaTime > 0
       ? from.distanceTo(this.heldCargo.getWorldPosition(new THREE.Vector3())) / deltaTime
       : 0;
+    const overlapAfter = isBlocked?.(speed) ?? 0;
 
-    // Undo a new hit, or any downward move that puts the cargo under the dock.
-    if (sank || (isBlocked?.(speed) && !wasBlocked)) {
+    // Block this key if it stays in / enters a container. Other keys can still move.
+    if (sank || (overlapAfter > 0 && overlapAfter >= overlapBefore - 0.0001)) {
       restore();
 
-      if (updateConnections) {
+      if (this.boomAnimation) {
         this.updateBoomConnections();
       }
     }
@@ -587,9 +588,8 @@ export class Crane {
           animation.boom.updateMatrix();
         },
         isBlocked,
-        deltaTime,
-        true
-      ); 
+        deltaTime
+      );
     }
 
     if (hoistDirection !== 0) {
@@ -607,8 +607,7 @@ export class Crane {
             animation.verticalCables.bottomHeight = previousHeight;
           },
           isBlocked,
-          deltaTime,
-          true
+          deltaTime
         );
       }
     }

@@ -46,8 +46,7 @@ export class CargoInteraction {
   }
 
   findNearestPickable(spreaderPosition) {
-    let nearest = null;
-    let nearestDistance = PICK_RADIUS;
+    const candidates = [];
 
     for (const slots of Object.values(this.cargoAreas)) {
       for (const [slotId, slot] of slots.slots) {
@@ -55,29 +54,93 @@ export class CargoInteraction {
           continue;
         }
 
-        const position = slots.getTopWorldPosition(slotId);
-        const distance = spreaderPosition.distanceTo(position);
+        const cargo = slots.peek(slotId);
+        const distance = this.distanceToCargo(spreaderPosition, cargo);
 
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearest = { type: 'slot', slots, slotId };
+        if (distance < PICK_RADIUS) {
+          candidates.push({
+            distance,
+            type: 'slot',
+            slots,
+            slotId,
+            cargo,
+            ignore: slot.stack
+          });
         }
       }
     }
 
     this.physics.getFreeCargos().forEach((cargo) => {
-      cargo.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(cargo);
-      const center = box.getCenter(new THREE.Vector3());
-      const distance = spreaderPosition.distanceTo(center);
+      const distance = this.distanceToCargo(spreaderPosition, cargo);
 
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = { type: 'loose', cargo };
+      if (distance < PICK_RADIUS) {
+        candidates.push({ distance, type: 'loose', cargo, ignore: [] });
       }
     });
 
-    return nearest;
+    candidates.sort((left, right) => left.distance - right.distance);
+
+    for (let index = 0; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+
+      if (!this.hangsClear(candidate.cargo, candidate.ignore)) {
+        continue;
+      }
+
+      if (candidate.type === 'slot') {
+        return {
+          type: 'slot',
+          slots: candidate.slots,
+          slotId: candidate.slotId
+        };
+      }
+
+      return { type: 'loose', cargo: candidate.cargo };
+    }
+
+    return null;
+  }
+
+  distanceToCargo(spreaderPosition, cargo) {
+    if (!cargo) {
+      return Infinity;
+    }
+
+    cargo.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(cargo);
+    const overFootprint = spreaderPosition.x >= box.min.x
+      && spreaderPosition.x <= box.max.x
+      && spreaderPosition.z >= box.min.z
+      && spreaderPosition.z <= box.max.z;
+
+    if (!overFootprint || spreaderPosition.y < box.max.y - 0.05) {
+      return Infinity;
+    }
+
+    return spreaderPosition.y - box.max.y;
+  }
+
+  // Preview lifting the cargo to the hook with its current footprint.
+  // Ignores the pile it comes from so the stack below does not hide E.
+  hangsClear(cargo, ignoreOthers = []) {
+    if (!cargo || !this.crane.cargoAnchor || this.crane.heldCargo) {
+      return false;
+    }
+
+    cargo.updateMatrixWorld(true);
+    const currentBox = new THREE.Box3().setFromObject(cargo);
+    const hook = this.crane.cargoAnchor.getWorldPosition(new THREE.Vector3());
+    const center = currentBox.getCenter(new THREE.Vector3());
+    const hungBox = currentBox.clone();
+    hungBox.translate(new THREE.Vector3(
+      hook.x - center.x,
+      hook.y - currentBox.max.y,
+      hook.z - center.z
+    ));
+
+    const ignore = new Set(ignoreOthers);
+    ignore.add(cargo);
+    return !this.physics.boxOverlapsOthers(hungBox, ignore);
   }
 
   findNearestPlaceSlot(spreaderPosition) {
@@ -178,9 +241,20 @@ export class CargoInteraction {
 
     if (this.pickTarget.type === 'slot') {
       pickedFromTruck = this.pickTarget.slots === this.cargoAreas.truck;
+      cargo = this.pickTarget.slots.peek(this.pickTarget.slotId);
+      const stack = this.pickTarget.slots.slots.get(this.pickTarget.slotId)?.stack ?? [];
+
+      if (!this.hangsClear(cargo, stack)) {
+        return;
+      }
+
       cargo = this.pickTarget.slots.remove(this.pickTarget.slotId);
     } else {
       cargo = this.pickTarget.cargo;
+
+      if (!this.hangsClear(cargo)) {
+        return;
+      }
     }
 
     if (cargo) {
@@ -203,6 +277,7 @@ export class CargoInteraction {
 
     const cargo = this.crane.detachCargo();
     this.placeTarget.slots.place(cargo, this.placeTarget.slotId);
+    cargo.userData.knockable = this.placeTarget.slots !== this.cargoAreas.ship;
     this.physics.setSlotted(cargo);
     this.refreshTargets();
     this.updatePrompt();
@@ -215,6 +290,7 @@ export class CargoInteraction {
 
     const cargo = this.crane.detachCargo();
     if (this.cargoAreas.truck.place(cargo, 'T1')) {
+      cargo.userData.knockable = true;
       this.physics.setSlotted(cargo);
       this.truck.scheduleDeparture();
     }
@@ -238,15 +314,20 @@ export class CargoInteraction {
       return;
     }
 
+    if (cargo.userData.knockable === false) {
+      return;
+    }
+
     for (const slots of Object.values(this.cargoAreas)) {
       for (const [slotId, slot] of slots.slots) {
-        if (slots.peek(slotId) !== cargo) {
+        if (!slot.stack.includes(cargo)) {
           continue;
         }
 
-        this.scene.attach(cargo);
+        const top = slots.peek(slotId);
+        this.scene.attach(top);
         slot.stack.pop();
-        this.physics.setFree(cargo);
+        this.physics.setFree(top);
         return;
       }
     }

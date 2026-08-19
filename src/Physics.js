@@ -174,6 +174,10 @@ export class Physics {
 
     cargo.userData.body = body;
     cargo.userData.physicsState = state;
+
+    if (cargo.userData.knockable === undefined) {
+      cargo.userData.knockable = true;
+    }
     this.containers.push(cargo);
     this.copyMeshToBody(cargo, body, 0);
     this.world.addBody(body);
@@ -325,6 +329,10 @@ export class Physics {
       return;
     }
 
+    if (target.userData.knockable === false) {
+      return;
+    }
+
     const hitterState = hitter?.userData.physicsState;
 
     if (hitterState !== 'free' && hitterState !== 'held') {
@@ -355,7 +363,11 @@ export class Physics {
     const heldBox = new THREE.Box3().setFromObject(this.heldCargo);
 
     this.containers.forEach((cargo) => {
-      if (cargo === this.heldCargo || cargo.userData.physicsState !== 'slotted') {
+      if (
+        cargo === this.heldCargo
+        || cargo.userData.physicsState !== 'slotted'
+        || cargo.userData.knockable === false
+      ) {
         return;
       }
 
@@ -364,6 +376,31 @@ export class Physics {
       if (heldBox.intersectsBox(otherBox)) {
         this.pendingKnocks.add(cargo);
       }
+    });
+  }
+
+  // Falling cargo is dynamic vs kinematic stacks: Cannon often skips beginContact.
+  knockFreeOverlaps() {
+    this.getFreeCargos().forEach((freeCargo) => {
+      freeCargo.updateMatrixWorld(true);
+      const freeBox = new THREE.Box3().setFromObject(freeCargo);
+      freeBox.expandByScalar(0.1);
+
+      this.containers.forEach((cargo) => {
+        if (
+          cargo === freeCargo
+          || cargo.userData.physicsState !== 'slotted'
+          || cargo.userData.knockable === false
+        ) {
+          return;
+        }
+
+        cargo.updateMatrixWorld(true);
+
+        if (freeBox.intersectsBox(new THREE.Box3().setFromObject(cargo))) {
+          this.pendingKnocks.add(cargo);
+        }
+      });
     });
   }
 
@@ -376,26 +413,33 @@ export class Physics {
 
   // Kinematic vs kinematic has no Cannon response, so the crane stops with AABB checks.
   isCraneBlocked(crane, attemptedSpeed = 0) {
+    const overlap = this.getCraneOverlap(crane);
+
+    if (overlap > 0 && crane.heldCargo) {
+      this.knockHeldOverlaps(attemptedSpeed);
+    }
+
+    return overlap;
+  }
+
+  getCraneOverlap(crane) {
     const partBoxes = this.getCranePartBoxes(crane);
 
     if (partBoxes.length === 0) {
-      return false;
+      return 0;
     }
+
+    let overlap = 0;
 
     if (crane.heldCargo) {
       const heldBox = new THREE.Box3().setFromObject(crane.heldCargo);
 
       if (heldBox.min.y < GROUND_Y) {
-        this.knockHeldOverlaps(attemptedSpeed);
-        return true;
+        overlap += GROUND_Y - heldBox.min.y;
       }
     }
 
     const obstacles = this.getTruckWorldBoxes();
-
-    if (this.shipHull) {
-      obstacles.push(new THREE.Box3().setFromObject(this.shipHull));
-    }
 
     this.containers.forEach((cargo) => {
       if (cargo === crane.heldCargo) {
@@ -408,17 +452,23 @@ export class Physics {
 
     for (let i = 0; i < partBoxes.length; i += 1) {
       for (let j = 0; j < obstacles.length; j += 1) {
-        if (this.boxesOverlap(partBoxes[i], obstacles[j])) {
-          if (crane.heldCargo) {
-            this.knockHeldOverlaps(attemptedSpeed);
-          }
-
-          return true;
-        }
+        overlap += this.boxOverlapVolume(partBoxes[i], obstacles[j]);
       }
     }
 
-    return false;
+    return overlap;
+  }
+
+  boxOverlapVolume(a, b) {
+    const dx = Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x);
+    const dy = Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y);
+    const dz = Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z);
+
+    if (dx <= OVERLAP_MARGIN || dy <= OVERLAP_MARGIN || dz <= OVERLAP_MARGIN) {
+      return 0;
+    }
+
+    return dx * dy * dz;
   }
 
   // Sample the path with the truck boxes so we stop before driving into a container.
@@ -462,23 +512,35 @@ export class Physics {
     });
   }
 
-  getCranePartBoxes(crane) {
-    const parts = [crane.parts.Boom, crane.parts.Crane_Spreader];
-    const boxes = [];
+  boxOverlapsOthers(box, ignoreCargo) {
+    const skip = ignoreCargo instanceof Set
+      ? ignoreCargo
+      : new Set(ignoreCargo == null ? [] : [ignoreCargo]);
 
-    if (crane.heldCargo) {
-      parts.push(crane.heldCargo);
-    }
-
-    for (let index = 0; index < parts.length; index += 1) {
-      const part = parts[index];
-
-      if (!part) {
-        continue;
+    return this.containers.some((other) => {
+      if (skip.has(other)) {
+        return false;
       }
 
-      part.updateMatrixWorld(true);
-      boxes.push(new THREE.Box3().setFromObject(part));
+      other.updateMatrixWorld(true);
+      return this.boxesOverlap(box, new THREE.Box3().setFromObject(other));
+    });
+  }
+
+  getCranePartBoxes(crane) {
+    const boxes = [];
+    const spreader = crane.parts.Crane_Spreader;
+
+    if (spreader) {
+      spreader.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(spreader);
+      box.expandByScalar(0.2);
+      boxes.push(box);
+    }
+
+    if (crane.heldCargo) {
+      crane.heldCargo.updateMatrixWorld(true);
+      boxes.push(new THREE.Box3().setFromObject(crane.heldCargo));
     }
 
     return boxes;
@@ -555,6 +617,7 @@ export class Physics {
     });
 
     this.knockHeldOverlaps();
+    this.knockFreeOverlaps();
     this.flushKnocks();
   }
 }

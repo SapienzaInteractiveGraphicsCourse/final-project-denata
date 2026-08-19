@@ -158,6 +158,7 @@ containerManager
         const cargo = containerManager.createRandom();
         cargo.name = `ShipContainer-${slotId}-${level + 1}`;
         ship.slots.place(cargo, slotId);
+        cargo.userData.knockable = false;
         physics.addContainer(cargo, 'slotted');
       }
     });
