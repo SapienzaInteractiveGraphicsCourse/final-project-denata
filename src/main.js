@@ -9,6 +9,7 @@ import { ContainerManager } from './ContainerManager.js';
 import { CargoInteraction } from './CargoInteraction.js';
 import { Physics } from './Physics.js';
 import { DecorativeShips } from './DecorativeShips.js';
+import { Lighting } from './Lighting.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -27,6 +28,8 @@ camera.lookAt(0, 4, 26);
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 // CAMERA CONTROLS
@@ -39,10 +42,11 @@ controls.maxDistance = 160;
 controls.update();
 
 // LIGHTS
-scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.9);
+scene.add(hemi);
 
-const sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(10, 20, 10);
+const sun = new THREE.DirectionalLight(0xffffff, 2.6);
+sun.position.set(60, 80, 40);
 scene.add(sun);
 
 // SEA
@@ -100,6 +104,14 @@ scene.add(ship.root);
 
 const decorativeShips = new DecorativeShips(() => !ship.isMoving());
 scene.add(decorativeShips.root);
+
+// LIGHTING
+const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck });
+const dayNightToggle = document.getElementById('dayNightToggle');
+
+dayNightToggle?.addEventListener('change', () => {
+  lighting.setDayNight(dayNightToggle.checked);
+});
 
 // PHYSICS
 const physics = new Physics();

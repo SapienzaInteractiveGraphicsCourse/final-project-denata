@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { enableShadows } from './Lighting.js';
 
 export const CONTAINER_SIZE = new THREE.Vector3(2.54, 2.7, 6.11);
 
@@ -157,6 +158,7 @@ export class ContainerManager {
     box.setFromObject(visual);
     const center = box.getCenter(new THREE.Vector3());
     visual.position.set(-center.x, -box.min.y, -center.z);
+    enableShadows(root);
 
     return root;
   }

@@ -27,6 +27,57 @@
     #blocker {
       z-index: 2;
     }
+    #dayNightSwitch {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.85);
+      border-radius: 6px;
+      font-size: 13px;
+      user-select: none;
+    }
+    #dayNightSwitch .label {
+      color: #333;
+      min-width: 36px;
+    }
+    #dayNightSwitch .label.is-night {
+      text-align: right;
+    }
+    #dayNightToggle {
+      appearance: none;
+      width: 42px;
+      height: 22px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: 11px;
+      background: #87ceeb;
+      cursor: pointer;
+      position: relative;
+    }
+    #dayNightToggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,.25);
+      transition: transform 0.15s ease;
+    }
+    #dayNightToggle:checked {
+      background: #1a2a4a;
+    }
+    #dayNightToggle:checked::after {
+      transform: translateX(20px);
+    }
   </style>
 </head>
 <body>
@@ -41,6 +92,11 @@
     C: load the container onto the truck<br />
     Q: drop the container
   </div>
+  <label id="dayNightSwitch">
+    <span class="label">Day</span>
+    <input type="checkbox" id="dayNightToggle" />
+    <span class="label is-night">Night</span>
+  </label>
   <div id="prompt" hidden></div>
   <div id="blocker" hidden></div>
   <script type="module" src="/src/main.js"></script>

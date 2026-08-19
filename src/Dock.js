@@ -1,11 +1,19 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CargoSlots } from './CargoSlots.js';
+import { enableShadows } from './Lighting.js';
 
 const DEPOT_ORIGIN = { x: -10, y: 2, z: 42 };
 const DEPOT_COL_SPACING = 3.2;
 const DEPOT_ROW_SPACING = 8;
 const DEPOT_COLS = 3;
 const DEPOT_ROWS = 4;
+const TALL_LAMP_NAME = '375770_Lampione_Lightstar_long';
+const SHORT_LAMP_NAME = '375770_Lampione_Lightstar';
+const TALL_LAMP_HEIGHT = 6.5;
+const ROAD_LAMP_SPACING = 14;
+const ROAD_LAMP_OFFSET = 4.6;
+const LAMP_GROUND_Y = 2;
 
 function createDepotLayout() {
   const layout = [];
@@ -40,6 +48,11 @@ export class Dock {
     this.createRoad();
     this.createRoadMarkings();
     this.createDepot();
+    this.createStreetLamps();
+
+    enableShadows(this.platform, false);
+    enableShadows(this.road, false);
+    enableShadows(this.roadMarkings, false);
   }
 
   createPlatform() {
@@ -245,5 +258,176 @@ export class Dock {
     this.root.add(this.depotRoot);
 
     this.depotSlots = new CargoSlots(this.depotRoot, createDepotLayout(), 3);
+  }
+
+  createStreetLamps() {
+    this.streetLamps = new THREE.Group();
+    this.streetLamps.name = 'StreetLamps';
+    this.root.add(this.streetLamps);
+
+    this.lampLights = [];
+    this.lampGlassMaterials = new Set();
+    this.lampsOn = false;
+
+    const loader = new GLTFLoader();
+    loader.load(
+      '/assets/models/lamp.glb',
+      (gltf) => {
+        this.setupStreetLamps(gltf.scene);
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading street lamps:', error);
+      }
+    );
+  }
+
+  setupStreetLamps(sourceScene) {
+    this.tallLampTemplate = this.prepareLampTemplate(
+      sourceScene,
+      TALL_LAMP_NAME,
+      SHORT_LAMP_NAME,
+      TALL_LAMP_HEIGHT
+    );
+    this.collectGlassMaterials(this.tallLampTemplate);
+
+    this.placeTallLampsAlong(-88, 20, -35, 20, 'both');
+    this.placeTallLampsAlong(-30, 20, 10, 20, 'right');
+    this.placeTallLampsAlong(0, 22, 0, 64, 'right');
+    this.placeTallLampsAlong(11, 64, -32, 64, 'right');
+    this.placeTallLampsAlong(-32, 72, -32, 140, 'both');
+    this.placeTallLampsAlong(-32, 30, -32, 72, 'left');
+
+    this.setLampsOn(this.lampsOn);
+  }
+
+  prepareLampTemplate(sourceScene, keepName, removeName, targetHeight) {
+    const holder = new THREE.Group();
+    const model = sourceScene.clone(true);
+    model.getObjectByName(removeName)?.removeFromParent();
+    holder.add(model);
+    holder.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(holder);
+    const size = box.getSize(new THREE.Vector3());
+    holder.scale.setScalar(targetHeight / size.y);
+    holder.updateMatrixWorld(true);
+
+    box.setFromObject(holder);
+    const center = box.getCenter(new THREE.Vector3());
+    holder.position.set(-center.x, -box.min.y, -center.z);
+
+    if (size.x > size.z) {
+      holder.rotation.y = Math.PI / 2;
+    }
+
+    const template = new THREE.Group();
+    template.add(holder);
+    return template;
+  }
+
+  collectGlassMaterials(object) {
+    object.traverse((child) => {
+      if (!child.isMesh) {
+        return;
+      }
+  
+      const material = child.material;
+      const isGlass = this.isGlassMesh(child.name) || this.isGlassMesh(material?.name);
+  
+      if (isGlass) {
+        this.lampGlassMaterials.add(material);
+      }
+    });
+  }
+  
+  isGlassMesh(name) {
+    return Boolean(name) && name.toLowerCase().includes('glass');
+  }
+
+  placeTallLampsAlong(fromX, fromZ, toX, toZ, sides) {
+    const dx = toX - fromX;
+    const dz = toZ - fromZ;
+    const length = Math.hypot(dx, dz);
+    const ux = dx / length;
+    const uz = dz / length;
+    const leftX = -uz;
+    const leftZ = ux;
+
+    for (let distance = ROAD_LAMP_SPACING / 2; distance < length; distance += ROAD_LAMP_SPACING) {
+      const x = fromX + ux * distance;
+      const z = fromZ + uz * distance;
+
+      if (sides === 'left' || sides === 'both') {
+        this.placeLamp(
+          this.tallLampTemplate,
+          x + leftX * ROAD_LAMP_OFFSET,
+          z + leftZ * ROAD_LAMP_OFFSET,
+          -leftX,
+          -leftZ
+        );
+      }
+
+      if (sides === 'right' || sides === 'both') {
+        this.placeLamp(
+          this.tallLampTemplate,
+          x - leftX * ROAD_LAMP_OFFSET,
+          z - leftZ * ROAD_LAMP_OFFSET,
+          leftX,
+          leftZ
+        );
+      }
+    }
+  }
+
+  placeLamp(template, x, z, faceX, faceZ) {
+    const lamp = template.clone(true);
+    lamp.position.set(x, LAMP_GROUND_Y, z);
+    lamp.rotation.y = Math.atan2(faceX, faceZ);
+    enableShadows(lamp);
+    this.streetLamps.add(lamp);
+    this.addLampLight(lamp);
+  }
+
+  addLampLight(lamp) {
+    lamp.updateMatrixWorld(true);
+
+    const glassCenter = new THREE.Vector3();
+    let foundGlass = false;
+
+    lamp.traverse((child) => {
+      if (foundGlass || !child.isMesh || !this.isGlassMesh(child.name)) {
+        return;
+      }
+
+      new THREE.Box3().setFromObject(child).getCenter(glassCenter);
+      foundGlass = true;
+    });
+
+    if (!foundGlass) {
+      const box = new THREE.Box3().setFromObject(lamp);
+      box.getCenter(glassCenter);
+      glassCenter.y = box.max.y - 0.35;
+    }
+
+    const light = new THREE.PointLight(0xffe2a8, 0, 16, 2);
+    lamp.worldToLocal(glassCenter);
+    light.position.copy(glassCenter);
+    lamp.add(light);
+    this.lampLights.push(light);
+  }
+
+  setLampsOn(on) {
+    this.lampsOn = on;
+
+    this.lampLights.forEach((light) => {
+      light.intensity = on ? 12 : 0;
+      light.visible = on;
+    });
+
+    this.lampGlassMaterials.forEach((material) => {
+      material.emissive.set(on ? 0xffe8a0 : 0x000000);
+      material.emissiveIntensity = on ? 1.4 : 0;
+    });
   }
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
+import { enableShadows } from './Lighting.js';
 
 const WATER_LEVEL = -2;
 const SPAWN_INTERVAL = 15;
@@ -110,6 +111,7 @@ export class DecorativeShips {
       -center.z
     );
 
+    enableShadows(modelHolder);
     return modelHolder;
   }
 

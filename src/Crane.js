@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GROUND_Y } from './Physics.js';
+import { enableShadows } from './Lighting.js';
 
 export class Crane {
   constructor() {
@@ -18,6 +19,8 @@ export class Crane {
     this.travelSpeed = 1.5;
     this.minTravelZ = 18;
     this.maxTravelZ = 70;
+    this.nightLights = [];
+    this.nightLightsOn = false;
 
     this.loadModel();
   }
@@ -93,6 +96,8 @@ export class Crane {
         model.updateMatrixWorld(true);
         this.setupWheels();
         this.setupBoomAnimation();
+        this.setupLights();
+        enableShadows(this.root);
       },
       undefined,
       (error) => {
@@ -123,6 +128,48 @@ export class Crane {
         this.wheelRadius = wheelSize.y / 2;
       }
     }
+  }
+
+  setupLights() {
+    const tower = this.parts.Crane_Tower;
+    const spreader = this.parts.Crane_Spreader;
+  
+    const cabinLight = new THREE.PointLight(0xffe0b0, 0, 8, 2);
+    cabinLight.name = 'CraneCabinLight';
+    cabinLight.position.set(3.9, -14.0, 3.7);
+    tower.add(cabinLight);
+    this.nightLights.push(cabinLight);
+  
+    const workLight = new THREE.SpotLight(0xfff2cc, 0, 24, 0.55, 0.35, 2);
+    workLight.name = 'CraneWorkLight';
+    workLight.castShadow = false;
+  
+    const workTarget = new THREE.Object3D();
+    workTarget.name = 'CraneWorkLightTarget';
+  
+    spreader.geometry.computeBoundingBox();
+    workLight.position.set(0, spreader.geometry.boundingBox.min.y - 0.4, 0);
+    spreader.add(workLight);
+    spreader.add(workTarget);
+    spreader.updateMatrixWorld(true);
+  
+    const groundPoint = workLight.getWorldPosition(new THREE.Vector3());
+    groundPoint.y = GROUND_Y;
+    spreader.worldToLocal(groundPoint);
+    workTarget.position.copy(groundPoint);
+  
+    workLight.target = workTarget;
+    this.nightLights.push(workLight);
+    this.setLightsOn(this.nightLightsOn);
+  }
+
+  setLightsOn(on) {
+    this.nightLightsOn = on;
+
+    this.nightLights.forEach((light) => {
+      light.intensity = on ? (light.isSpotLight ? 70 : 22) : 0;
+      light.visible = on;
+    });
   }
 
   move(travelDirection, deltaTime) {

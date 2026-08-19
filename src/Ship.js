@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
 import { CargoSlots } from './CargoSlots.js';
+import { enableShadows } from './Lighting.js';
 
 const WATER_LEVEL = -2;
 
@@ -211,6 +212,7 @@ export class Ship {
       -center.z
     );
 
+    enableShadows(modelHolder);
     return modelHolder;
   }
 

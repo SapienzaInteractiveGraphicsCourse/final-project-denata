@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
 import { CargoSlots } from './CargoSlots.js';
+import { enableShadows } from './Lighting.js';
 
 export class Truck {
   constructor() {
@@ -20,6 +21,8 @@ export class Truck {
     this.pauseOffset = 0;
     this.pendingMove = null;
     this.activePath = null;
+    this.nightLights = [];
+    this.nightLightsOn = false;
 
     this.cargoRoot = new THREE.Group();
     this.cargoRoot.name = 'TruckCargo';
@@ -126,14 +129,16 @@ export class Truck {
 
         this.placeCargoOnTrailer(model);
 
-        this.setProgress(0, 1);
-        this.root.updateMatrixWorld(true);
-
         if (this.wheels.length > 0) {
           const wheelBox = new THREE.Box3().setFromObject(this.wheels[0]);
           const wheelSize = wheelBox.getSize(new THREE.Vector3());
           this.wheelRadius = wheelSize.y / 2;
         }
+
+        this.setupLights();
+        enableShadows(this.root);
+        this.setProgress(0, 1);
+        this.root.updateMatrixWorld(true);
 
         this.root.visible = true;
         this.state = 'parked';
@@ -148,6 +153,71 @@ export class Truck {
   placeCargoOnTrailer(model) {
     this.cargoRoot.position.set(-1, 1.65, 0);
     return;
+  }
+
+  setupLights() {
+    const headlights = [
+      [4.52, 0.58, 0.96],
+      [4.52, 0.58, -0.96]
+    ];
+    const taillights = [
+      [-4.52, 0.90, 1.02],
+      [-4.52, 0.90, -1.02]
+    ];
+
+    headlights.forEach(([x, y, z], index) => {
+      const light = new THREE.SpotLight(0xfff3d0, 0, 14, 0.38, 0.4, 2);
+      light.name = index === 0 ? 'TruckHeadlightL' : 'TruckHeadlightR';
+      light.castShadow = false;
+      light.position.set(x, y, z);
+
+      const target = new THREE.Object3D();
+      target.position.set(x + 6, y - 0.25, z);
+
+      const lens = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.36, 0.09),
+        new THREE.MeshBasicMaterial({ color: 0xfff4cc, side: THREE.DoubleSide })
+      );
+      lens.position.set(x, y, z);
+      lens.rotation.y = Math.PI / 2;
+
+      this.root.add(light);
+      this.root.add(target);
+      this.root.add(lens);
+      light.target = target;
+      this.nightLights.push(light);
+      this.nightLights.push(lens);
+    });
+
+    taillights.forEach(([x, y, z], index) => {
+      const light = new THREE.PointLight(0xff2211, 0, 2.2, 2);
+      light.name = index === 0 ? 'TruckTaillightL' : 'TruckTaillightR';
+      light.position.set(x, y, z);
+
+      const lens = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.22, 0.08),
+        new THREE.MeshBasicMaterial({ color: 0xff3333, side: THREE.DoubleSide })
+      );
+      lens.position.set(x, y, z);
+      lens.rotation.y = Math.PI / 2;
+
+      this.root.add(light);
+      this.root.add(lens);
+      this.nightLights.push(light);
+      this.nightLights.push(lens);
+    });
+
+    this.setLightsOn(this.nightLightsOn);
+  }
+
+  setLightsOn(on) {
+    this.nightLightsOn = on;
+    this.nightLights.forEach((object) => {
+      if (object.isLight) {
+        object.intensity = on ? (object.isSpotLight ? 16 : 1.2) : 0;
+      }
+      object.visible = on;
+    });
   }
 
   setProgress(
