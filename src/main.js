@@ -11,6 +11,7 @@ import { Physics } from './Physics.js';
 import { DecorativeShips } from './DecorativeShips.js';
 import { Lighting } from './Lighting.js';
 import { MapBounds } from './MapBounds.js';
+import { CameraViews } from './CameraViews.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -38,9 +39,8 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 4, 26);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
-controls.minDistance = 12;
-controls.maxDistance = 160;
-controls.update();
+controls.minDistance = 16;
+controls.maxDistance = 88;
 
 // LIGHTS
 const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.9);
@@ -101,6 +101,9 @@ const craneControls = {
   raiseSpreader: false,
   lowerSpreader: false
 };
+
+// CAMERA VIEWS
+const cameraViews = new CameraViews({ camera, controls, crane });
 
 // SHIP
 const ship = new Ship();
@@ -337,7 +340,7 @@ function animate(time) {
   cargoInteraction.update();
   physics.update(deltaTime, crane, truck);
   sea.material.uniforms.time.value += deltaTime;
-  controls.update();
+  cameraViews.update(deltaTime);
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

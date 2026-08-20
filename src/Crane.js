@@ -21,6 +21,8 @@ export class Crane {
     this.maxTravelZ = 70;
     this.nightLights = [];
     this.nightLightsOn = false;
+    this.cabinAnchor = null;
+    this.cabinForward = new THREE.Vector3();
 
     this.loadModel();
   }
@@ -139,6 +141,11 @@ export class Crane {
     cabinLight.position.set(3.9, -14.0, 3.7);
     tower.add(cabinLight);
     this.nightLights.push(cabinLight);
+
+    this.cabinAnchor = new THREE.Object3D();
+    this.cabinAnchor.name = 'CabinView';
+    this.cabinAnchor.position.copy(cabinLight.position);
+    tower.add(this.cabinAnchor);
   
     const workLight = new THREE.SpotLight(0xfff2cc, 0, 24, 0.55, 0.35, 2);
     workLight.name = 'CraneWorkLight';
@@ -370,6 +377,41 @@ export class Crane {
     }
 
     return spreader.getWorldPosition(new THREE.Vector3());
+  }
+
+  // Follow the rails only. Do not parent the camera to the rotating upper body.
+  getCameraFocus(target = new THREE.Vector3()) {
+    return target.set(
+      this.root.position.x,
+      this.root.position.y + 16,
+      this.root.position.z
+    );
+  }
+
+  // First-person seat: in front of the cabin glass, still tied to the crane.
+  getCabinPose(position, target) {
+    const { x, y, z } = this.root.position;
+
+    if (this.cabinAnchor) {
+      this.cabinAnchor.getWorldPosition(position);
+    } else {
+      position.set(x + 4, y + 13, z + 1);
+    }
+
+    const spreader = this.parts.Crane_Spreader;
+
+    if (spreader) {
+      spreader.getWorldPosition(target);
+    } else {
+      target.set(x - 20, 4, z);
+    }
+
+    this.cabinForward.copy(target).sub(position);
+
+    if (this.cabinForward.lengthSq() > 0.0001) {
+      this.cabinForward.normalize();
+      position.addScaledVector(this.cabinForward, 4.5);
+    }
   }
 
   getMeshEnds(mesh, axis) {

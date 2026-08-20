@@ -105,6 +105,27 @@
       margin: 0;
       cursor: pointer;
     }
+    #cameraViews {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 3;
+      display: flex;
+      gap: 6px;
+    }
+    #cameraViews button {
+      padding: 6px 10px;
+      font-size: 12px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255,255,255,.85);
+      color: #333;
+      cursor: pointer;
+    }
+    #cameraViews button.is-active {
+      background: #2c4a6e;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -117,7 +138,14 @@
     R / F: raise / lower the spreader<br />
     E: pick up / place a container<br />
     C: load the container onto the truck<br />
-    Q: drop the container
+    Q: drop the container<br />
+  </div>
+  <div id="cameraViews">
+    <button type="button" data-view="overview">1: Overview</button>
+    <button type="button" data-view="crane">2: Crane</button>
+    <button type="button" data-view="cabin">3: Cabin</button>
+    <button type="button" data-view="ship">4: Ship</button>
+    <button type="button" data-view="truck">5: Truck</button>
   </div>
   <div id="lookControls">
     <label id="dayNightSwitch">
