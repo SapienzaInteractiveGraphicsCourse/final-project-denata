@@ -10,6 +10,7 @@ import { CargoInteraction } from './CargoInteraction.js';
 import { Physics } from './Physics.js';
 import { DecorativeShips } from './DecorativeShips.js';
 import { Lighting } from './Lighting.js';
+import { MapBounds } from './MapBounds.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -77,6 +78,9 @@ scene.add(sea);
 const dock = new Dock();
 scene.add(dock.root);
 
+const mapBounds = new MapBounds();
+scene.add(mapBounds.root);
+
 // TRUCK
 const truck = new Truck();
 truck.blockerElement = document.getElementById('blocker');
@@ -106,11 +110,20 @@ const decorativeShips = new DecorativeShips(() => !ship.isMoving());
 scene.add(decorativeShips.root);
 
 // LIGHTING
-const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck });
+const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, bounds: mapBounds });
 const dayNightToggle = document.getElementById('dayNightToggle');
+const sunriseToggle = document.getElementById('sunriseToggle');
+const sunriseSwitch = document.getElementById('sunriseSwitch');
 
 dayNightToggle?.addEventListener('change', () => {
   lighting.setDayNight(dayNightToggle.checked);
+  if (sunriseSwitch) {
+    sunriseSwitch.hidden = dayNightToggle.checked;
+  }
+});
+
+sunriseToggle?.addEventListener('change', () => {
+  lighting.setSunrise(sunriseToggle.checked);
 });
 
 // PHYSICS
@@ -189,6 +202,8 @@ containerManager
         depotIndex += 1;
       }
     }
+
+    dock.fillStaticYards(containerManager);
   })
   .catch((error) => {
     console.error('Error loading container:', error);
