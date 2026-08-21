@@ -12,6 +12,7 @@ import { DecorativeShips } from './DecorativeShips.js';
 import { Lighting } from './Lighting.js';
 import { MapBounds } from './MapBounds.js';
 import { CameraViews } from './CameraViews.js';
+import { Worker } from './Worker.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -102,8 +103,21 @@ const craneControls = {
   lowerSpreader: false
 };
 
+// WORKER
+const worker = new Worker();
+worker.root.position.set(-22, 2, 36);
+worker.root.rotation.y = Math.PI;
+scene.add(worker.root);
+
+const workerControls = {
+  forward: false,
+  back: false,
+  left: false,
+  right: false
+};
+
 // CAMERA VIEWS
-const cameraViews = new CameraViews({ camera, controls, crane });
+const cameraViews = new CameraViews({ camera, controls, crane, worker });
 
 // SHIP
 const ship = new Ship();
@@ -113,7 +127,7 @@ const decorativeShips = new DecorativeShips(() => !ship.isMoving());
 scene.add(decorativeShips.root);
 
 // LIGHTING
-const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, bounds: mapBounds });
+const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, bounds: mapBounds, worker });
 const dayNightToggle = document.getElementById('dayNightToggle');
 const sunriseToggle = document.getElementById('sunriseToggle');
 const sunriseSwitch = document.getElementById('sunriseSwitch');
@@ -212,8 +226,82 @@ containerManager
     console.error('Error loading container:', error);
   });
 
+const flashlightPrompt = document.getElementById('flashlightPrompt');
+
+function isWorkerView() {
+  return cameraViews.isWorkerView();
+}
+
+function updateFlashlightPrompt(workerView) {
+  const canUseFlashlight = workerView && lighting.isNight;
+
+  if (!canUseFlashlight) {
+    if (flashlightPrompt) {
+      flashlightPrompt.hidden = true;
+    }
+
+    worker.putAwayFlashlight();
+    return;
+  }
+
+  if (!flashlightPrompt) {
+    return;
+  }
+
+  flashlightPrompt.textContent = worker.flashlightOn
+    ? 'Press L to put away the flashlight'
+    : 'Press L to turn on the flashlight';
+  flashlightPrompt.hidden = false;
+}
+
+function clearCraneControls() {
+  craneControls.raiseBoom = false;
+  craneControls.lowerBoom = false;
+  craneControls.rotateLeft = false;
+  craneControls.rotateRight = false;
+  craneControls.moveTowardSea = false;
+  craneControls.moveAwayFromSea = false;
+  craneControls.raiseSpreader = false;
+  craneControls.lowerSpreader = false;
+}
+
+function clearWorkerControls() {
+  workerControls.forward = false;
+  workerControls.back = false;
+  workerControls.left = false;
+  workerControls.right = false;
+}
+
 // SPACE = ARRIVE / DEPART
 window.addEventListener('keydown', (event) => {
+  if (isWorkerView()) {
+    if (event.code === 'KeyL' && !event.repeat && lighting.isNight) {
+      worker.toggleFlashlight();
+    }
+
+    if (event.code === 'ArrowUp') {
+      workerControls.forward = true;
+      event.preventDefault();
+    }
+
+    if (event.code === 'ArrowDown') {
+      workerControls.back = true;
+      event.preventDefault();
+    }
+
+    if (event.code === 'ArrowLeft') {
+      workerControls.left = true;
+      event.preventDefault();
+    }
+
+    if (event.code === 'ArrowRight') {
+      workerControls.right = true;
+      event.preventDefault();
+    }
+
+    return;
+  }
+
   if (event.code === 'Space' && !event.repeat && ship.canToggle()) {
     decorativeShips.waitBeforeShipAction(() => ship.toggle());
   }
@@ -270,6 +358,24 @@ window.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('keyup', (event) => {
+  if (event.code === 'ArrowUp') {
+    workerControls.forward = false;
+    craneControls.moveTowardSea = false;
+  }
+
+  if (event.code === 'ArrowDown') {
+    workerControls.back = false;
+    craneControls.moveAwayFromSea = false;
+  }
+
+  if (event.code === 'ArrowLeft') {
+    workerControls.left = false;
+  }
+
+  if (event.code === 'ArrowRight') {
+    workerControls.right = false;
+  }
+
   if (event.code === 'KeyW') {
     craneControls.raiseBoom = false;
   }
@@ -284,14 +390,6 @@ window.addEventListener('keyup', (event) => {
 
   if (event.code === 'KeyD') {
     craneControls.rotateRight = false;
-  }
-
-  if (event.code === 'ArrowUp') {
-    craneControls.moveTowardSea = false;
-  }
-
-  if (event.code === 'ArrowDown') {
-    craneControls.moveAwayFromSea = false;
   }
 
   if (event.code === 'KeyR') {
@@ -317,14 +415,30 @@ function animate(time) {
   const deltaTime = Math.min((time - (lastTime ?? time)) / 1000, 0.1);
   lastTime = time;
 
-  const boomDirection = Number(craneControls.lowerBoom)
-    - Number(craneControls.raiseBoom);
-  const rotationDirection = Number(craneControls.rotateRight)
-    - Number(craneControls.rotateLeft);
-  const travelDirection = Number(craneControls.moveAwayFromSea)
-    - Number(craneControls.moveTowardSea);
-  const hoistDirection = Number(craneControls.raiseSpreader)
-    - Number(craneControls.lowerSpreader);
+  const workerView = isWorkerView();
+
+  if (workerView) {
+    clearCraneControls();
+  } else {
+    clearWorkerControls();
+  }
+
+  const boomDirection = workerView
+    ? 0
+    : Number(craneControls.lowerBoom) - Number(craneControls.raiseBoom);
+  const rotationDirection = workerView
+    ? 0
+    : Number(craneControls.rotateRight) - Number(craneControls.rotateLeft);
+  const travelDirection = workerView
+    ? 0
+    : Number(craneControls.moveAwayFromSea) - Number(craneControls.moveTowardSea);
+  const hoistDirection = workerView
+    ? 0
+    : Number(craneControls.raiseSpreader) - Number(craneControls.lowerSpreader);
+
+  const walkForward = Number(workerControls.forward) - Number(workerControls.back);
+  const walkTurn = Number(workerControls.left) - Number(workerControls.right);
+  const walking = workerView && worker.move(deltaTime, walkForward, walkTurn);
 
   ship.update(time);
   decorativeShips.update(time, deltaTime);
@@ -337,7 +451,15 @@ function animate(time) {
     hoistDirection,
     (speed) => physics.isCraneBlocked(crane, speed)
   );
-  cargoInteraction.update();
+  worker.update(deltaTime, walking, cameraViews.isWorkerFirstPerson());
+
+  if (workerView) {
+    cargoInteraction.hidePrompt();
+  } else {
+    cargoInteraction.update();
+  }
+
+  updateFlashlightPrompt(workerView);
   physics.update(deltaTime, crane, truck);
   sea.material.uniforms.time.value += deltaTime;
   cameraViews.update(deltaTime);
