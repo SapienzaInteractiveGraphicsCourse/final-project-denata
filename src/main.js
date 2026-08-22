@@ -101,7 +101,7 @@ scene.add(truck.root);
 
 // CRANE
 const crane = new Crane();
-crane.root.position.set(15, 2, 42);
+crane.root.position.set(14, 2, 42);
 scene.add(crane.root);
 
 const craneControls = {
@@ -117,7 +117,7 @@ const craneControls = {
 
 // WORKER
 const worker = new Worker();
-worker.root.position.set(-22, 2, 36);
+worker.root.position.set(-22, 2, 12);
 worker.root.rotation.y = Math.PI;
 scene.add(worker.root);
 

@@ -16,6 +16,168 @@ const LAMP_GROUND_Y = 2;
 const ROAD_Y = 2.03;
 const ROAD_THICKNESS = 0.06;
 const ROAD_WIDTH = 6;
+const INDUSTRIAL_BUILDING_URL =
+  '/assets/models/industrial_buildings_set_-_low_poly_models.glb';
+const FORKLIFT_URL = '/assets/models/forklift_low_poly.glb';
+const FORKLIFT = {
+  position: new THREE.Vector3(15, 2, 60),
+  width: 1.7,
+  length: 3.5,
+  rotationY: Math.PI / 4
+};
+const FUEL_TRUCK_URL = '/assets/models/fuel_truck.glb';
+const FUEL_TRUCK = {
+  position: new THREE.Vector3(36, 2, 19),
+  width: 3,
+  length: 13,
+  rotationY: Math.PI / 2
+};
+const INDUSTRIAL_BUILDING = {
+  name: 'Industrial_Building_10',
+  position: new THREE.Vector3(4, 2, 86),
+  width: 24,
+  length: 54,
+  rotationY: Math.PI / 2
+};
+const RAILROAD_LOADBAY_SHED = {
+  name: 'Industrial_Railroad_Loadbay_Shed_1',
+  position: new THREE.Vector3(25, 2, 60),
+  width: 8,
+  length: 17,
+  rotationY: 0
+};
+const INDUSTRIAL_WAREHOUSE = {
+  name: 'Industrial_Warehouse_1',
+  position: new THREE.Vector3(-23, 2, 48),
+  width: 22,
+  length: 7,
+  rotationY: Math.PI / 2
+};
+const INDUSTRIAL_WATERTOWER = {
+  name: 'Industrial_Watertower_1',
+  position: new THREE.Vector3(-23, 2, 30),
+  height: 10,
+  rotationY: 0
+};
+const INDUSTRIAL_OFFICE_TRAILER = {
+  name: 'Industrial_OfficeTrailer_1',
+  position: new THREE.Vector3(-33, 2, 11),
+  width: 10,
+  length: 5,
+  rotationY: 0
+};
+const INDUSTRIAL_POWERPLANT = {
+  name: 'Industrial_Powerplant_1',
+  position: new THREE.Vector3(-107, 2, 100),
+  width: 45,
+  length: 90,
+  rotationY: Math.PI
+};
+const INDUSTRIAL_PORTAL_CRANE = {
+  name: 'Industrial_PortalCrane_2',
+  position: new THREE.Vector3(-45, 2, 42),
+  width: 9,
+  length: 14,
+  rotationY: Math.PI / 2
+};
+const INDUSTRIAL_TANK_2_A = {
+  name: 'Industrial_Tank_2',
+  position: new THREE.Vector3(30, 2, 30),
+  width: 10,
+  length: 10,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_2_B = {
+  name: 'Industrial_Tank_2',
+  position: new THREE.Vector3(30, 2, 44),
+  width: 10,
+  length: 10,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_1_A = {
+  name: 'Industrial_Tank_1',
+  position: new THREE.Vector3(38, 2, 10),
+  width: 8,
+  length: 8,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_1_B = {
+  name: 'Industrial_Tank_1',
+  position: new THREE.Vector3(48, 2, 10),
+  width: 8,
+  length: 8,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_1_C = {
+  name: 'Industrial_Tank_1',
+  position: new THREE.Vector3(58, 2, 10),
+  width: 8,
+  length: 8,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_4_A = {
+  name: 'Industrial_Tank_4',
+  position: new THREE.Vector3(33, 2, 14),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_4_B = {
+  name: 'Industrial_Tank_4',
+  position: new THREE.Vector3(43, 2, 14),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_TANK_4_C = {
+  name: 'Industrial_Tank_4',
+  position: new THREE.Vector3(53, 2, 14),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_SMTH = {
+  name: 'Industrial_Smth_1',
+  position: new THREE.Vector3(25, 2, 15),
+  width: 7,
+  length: 7,
+  rotationY: Math.PI / 2
+};
+const INDUSTRIAL_TSR_STATION_A = {
+  name: 'Industrial_TsrStation_1',
+  position: new THREE.Vector3(23, 2, 21),
+  width: 5,
+  length: 2,
+  rotationY: 0
+};
+const INDUSTRIAL_TSR_STATION_B = {
+  name: 'Industrial_TsrStation_1',
+  position: new THREE.Vector3(23, 2, 24),
+  width: 5,
+  length: 2,
+  rotationY: 0
+};
+const INDUSTRIAL_RADIOTOWER_A = {
+  name: 'Industrial_Radiotower_1',
+  position: new THREE.Vector3(70, 2, 10),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_RADIOTOWER_B = {
+  name: 'Industrial_Radiotower_1',
+  position: new THREE.Vector3(-25, 2, 10),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_RADIOTOWER_C = {
+  name: 'Industrial_Radiotower_1',
+  position: new THREE.Vector3(-70, 2, 10),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
 
 // Extra port roads. Truck loop stays as-is in createRoad.
 const PORT_ROADS = [
@@ -49,7 +211,17 @@ const ROAD_CLEAR = ROAD_WIDTH / 2 + CONTAINER_SIZE.z / 2 + 0.4;
 
 const STATIC_YARDS = [
   { id: 'Y1', x: -71.5, z: 32, cols: 2, rows: 12, rotationY: Math.PI / 2 },
-  { id: 'Y2', x: -47.5, z: 32, cols: 2, rows: 12, rotationY: Math.PI / 2 },
+  {
+    id: 'Y2',
+    x: -48.5
+      + (CONTAINER_SIZE.z + 0.4) / 2
+      - (CONTAINER_SIZE.x + 0.4),
+    z: 45,
+    cols: 3,
+    rows: 8,
+    maxLevels: 2,
+    rotationY: 0
+  },
   { id: 'Y3', x: 48.5, z: 28, cols: 2, rows: 10, rotationY: Math.PI / 2 },
   { id: 'Y4', x: 72.5, z: 28, cols: 2, rows: 9, rotationY: Math.PI / 2 },
   { id: 'Y5', x: -71.5, z: 96, cols: 3, rows: 6, rotationY: Math.PI / 2 },
@@ -125,7 +297,12 @@ export class Dock {
     this.createRoad();
     this.createRoadMarkings();
     this.createDepot();
-    this.loading = this.createStreetLamps();
+    this.loading = Promise.all([
+      this.createStreetLamps(),
+      this.createIndustrialBuildings(),
+      this.createForklift(),
+      this.createFuelTruck()
+    ]);
 
     enableShadows(this.platform, false);
     enableShadows(this.road, false);
@@ -404,9 +581,13 @@ export class Dock {
             continue;
           }
 
-          const levels = STATIC_STACK_SIZES[
+          const randomLevels = STATIC_STACK_SIZES[
             Math.floor(Math.random() * STATIC_STACK_SIZES.length)
           ];
+          const levels = Math.min(
+            randomLevels,
+            yard.maxLevels ?? randomLevels
+          );
 
           for (let level = 0; level < levels; level += 1) {
             const cargo = containerManager.createRandom();
@@ -422,6 +603,161 @@ export class Dock {
     });
 
     enableShadows(this.staticYards);
+  }
+
+  async createIndustrialBuildings() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(INDUSTRIAL_BUILDING_URL);
+
+    this.industrialBuilding = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_BUILDING
+    );
+    this.railroadLoadbayShed = this.createIndustrialAsset(
+      gltf.scene,
+      RAILROAD_LOADBAY_SHED
+    );
+    this.industrialWarehouse = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_WAREHOUSE
+    );
+    this.industrialWatertower = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_WATERTOWER
+    );
+    this.industrialOfficeTrailer = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_OFFICE_TRAILER
+    );
+    this.industrialPowerplant = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_POWERPLANT
+    );
+    this.industrialPortalCrane = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_PORTAL_CRANE
+    );
+    this.industrialTank2A = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_2_A
+    );
+    this.industrialTank2B = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_2_B
+    );
+    this.industrialTank1A = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_1_A
+    );
+    this.industrialTank1B = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_1_B
+    );
+    this.industrialTank1C = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_1_C
+    );
+    this.industrialTank4A = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_4_A
+    );
+    this.industrialTank4B = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_4_B
+    );
+    this.industrialTank4C = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TANK_4_C
+    );
+    this.industrialSmth = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_SMTH
+    );
+    this.industrialTsrStationA = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TSR_STATION_A
+    );
+    this.industrialTsrStationB = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_TSR_STATION_B
+    );
+    this.industrialRadiotowerA = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_RADIOTOWER_A
+    );
+    this.industrialRadiotowerB = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_RADIOTOWER_B
+    );
+    this.industrialRadiotowerC = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_RADIOTOWER_C
+    );
+  }
+
+  async createForklift() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(FORKLIFT_URL);
+
+    this.forklift = this.createAsset(gltf.scene, FORKLIFT, 'Forklift');
+  }
+
+  async createFuelTruck() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(FUEL_TRUCK_URL);
+
+    this.fuelTruck = this.createAsset(gltf.scene, FUEL_TRUCK, 'FuelTruck');
+  }
+
+  createIndustrialAsset(sourceScene, config) {
+    const source = sourceScene.getObjectByName(config.name);
+
+    if (!source) {
+      throw new Error(`${config.name} was not found in the industrial GLB`);
+    }
+
+    return this.createAsset(source, config, config.name);
+  }
+
+  createAsset(source, config, name) {
+    const model = source.clone(true);
+    model.position.set(0, 0, 0);
+
+    const offsetRoot = new THREE.Group();
+    offsetRoot.add(model);
+    offsetRoot.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(offsetRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    offsetRoot.position.set(-center.x, -box.min.y, -center.z);
+
+    let widthScale;
+    let lengthScale;
+    let heightScale;
+
+    if (config.height !== undefined) {
+      heightScale = config.height / size.y;
+      widthScale = heightScale;
+      lengthScale = heightScale;
+    } else {
+      widthScale = config.width / size.x;
+      lengthScale = config.length / size.z;
+      heightScale = Math.sqrt(widthScale * lengthScale);
+    }
+    const scaleRoot = new THREE.Group();
+    scaleRoot.scale.set(widthScale, heightScale, lengthScale);
+    scaleRoot.add(offsetRoot);
+
+    const asset = new THREE.Group();
+    asset.name = name;
+    asset.position.copy(config.position);
+    asset.rotation.y = config.rotationY;
+    asset.add(scaleRoot);
+    this.root.add(asset);
+
+    enableShadows(asset);
+    return asset;
   }
 
   async createStreetLamps() {

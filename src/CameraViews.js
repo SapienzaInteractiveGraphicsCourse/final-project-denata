@@ -4,7 +4,7 @@ const VIEW_IDS = ['overview', 'crane', 'cabin', 'ship', 'truck', 'worker', 'work
 
 const PRESETS = {
   overview: {
-    position: new THREE.Vector3(0, 25, 85),
+    position: new THREE.Vector3(0, 27, 80),
     target: new THREE.Vector3(0, 4, 26),
     minDistance: 16,
     maxDistance: 88,
