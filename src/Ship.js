@@ -125,9 +125,7 @@ export class Ship {
       2
     );
 
-    this.initialize().catch((error) => {
-      console.error('Error loading ships:', error);
-    });
+    this.loading = this.initialize();
   }
 
   async initialize() {

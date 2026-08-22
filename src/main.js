@@ -34,6 +34,10 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
+const loadingScreen = document.getElementById('loadingScreen');
+const loadingStatus = document.getElementById('loadingStatus');
+let gameReady = false;
+
 // CAMERA CONTROLS
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 4, 26);
@@ -41,6 +45,7 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 16;
 controls.maxDistance = 88;
+controls.enabled = false;
 
 // LIGHTS
 const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.9);
@@ -51,9 +56,16 @@ sun.position.set(60, 80, 40);
 scene.add(sun);
 
 // SEA
-const waterNormals = new THREE.TextureLoader().load(
-  '/assets/textures/waternormals.jpg'
-);
+const waterNormalsLoader = new THREE.TextureLoader();
+let waterNormals;
+const waterNormalsLoading = new Promise((resolve, reject) => {
+  waterNormals = waterNormalsLoader.load(
+    '/assets/textures/waternormals.jpg',
+    resolve,
+    undefined,
+    reject
+  );
+});
 waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
 
 const sea = new Water(new THREE.PlaneGeometry(1200, 600), {
@@ -104,6 +116,7 @@ const craneControls = {
 
 // CAMERA VIEWS
 const cameraViews = new CameraViews({ camera, controls, crane });
+cameraViews.setEnabled(false);
 
 // SHIP
 const ship = new Ship();
@@ -117,6 +130,14 @@ const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, bound
 const dayNightToggle = document.getElementById('dayNightToggle');
 const sunriseToggle = document.getElementById('sunriseToggle');
 const sunriseSwitch = document.getElementById('sunriseSwitch');
+
+if (dayNightToggle) {
+  dayNightToggle.disabled = true;
+}
+
+if (sunriseToggle) {
+  sunriseToggle.disabled = true;
+}
 
 dayNightToggle?.addEventListener('change', () => {
   lighting.setDayNight(dayNightToggle.checked);
@@ -172,48 +193,51 @@ truck.onDeparted = async () => {
   truck.arrive();
 };
 
-containerManager
-  .load()
-  .then(() => {
-    const shipSlotIds = [...ship.slots.slots.keys()];
-    const singleStackCount = Math.floor(shipSlotIds.length / 3);
-    const shipStackSizes = shipSlotIds
-      .map((slotId, index) => index < singleStackCount ? 1 : 2)
-      .sort(() => Math.random() - 0.5);
+async function populateInitialCargo() {
+  await Promise.all([containerManager.load(), ship.loading]);
 
-    shipSlotIds.forEach((slotId, index) => {
-      for (let level = 0; level < shipStackSizes[index]; level += 1) {
-        const cargo = containerManager.createRandom();
-        cargo.name = `ShipContainer-${slotId}-${level + 1}`;
-        ship.slots.place(cargo, slotId);
-        cargo.userData.knockable = false;
-        physics.addContainer(cargo, 'slotted');
-      }
-    });
+  const shipSlotIds = [...ship.slots.slots.keys()];
+  const singleStackCount = Math.floor(shipSlotIds.length / 3);
+  const shipStackSizes = shipSlotIds
+    .map((slotId, index) => index < singleStackCount ? 1 : 2)
+    .sort(() => Math.random() - 0.5);
 
-    let depotIndex = 1;
-    const stackSizes = [0, 1, 1, 1, 2, 2, 2, 3];
-
-    for (const slotId of dock.depotSlots.slots.keys()) {
-      const stackSize = stackSizes[Math.floor(Math.random() * stackSizes.length)];
-
-      for (let level = 0; level < stackSize; level += 1) {
-        const cargo = containerManager.createRandom();
-        cargo.name = `DepotContainer-${depotIndex}`;
-        dock.depotSlots.place(cargo, slotId);
-        physics.addContainer(cargo, 'slotted');
-        depotIndex += 1;
-      }
+  shipSlotIds.forEach((slotId, index) => {
+    for (let level = 0; level < shipStackSizes[index]; level += 1) {
+      const cargo = containerManager.createRandom();
+      cargo.name = `ShipContainer-${slotId}-${level + 1}`;
+      ship.slots.place(cargo, slotId);
+      cargo.userData.knockable = false;
+      physics.addContainer(cargo, 'slotted');
     }
-
-    dock.fillStaticYards(containerManager);
-  })
-  .catch((error) => {
-    console.error('Error loading container:', error);
   });
+
+  let depotIndex = 1;
+  const stackSizes = [0, 1, 1, 1, 2, 2, 2, 3];
+
+  for (const slotId of dock.depotSlots.slots.keys()) {
+    const stackSize = stackSizes[Math.floor(Math.random() * stackSizes.length)];
+
+    for (let level = 0; level < stackSize; level += 1) {
+      const cargo = containerManager.createRandom();
+      cargo.name = `DepotContainer-${depotIndex}`;
+      dock.depotSlots.place(cargo, slotId);
+      physics.addContainer(cargo, 'slotted');
+      depotIndex += 1;
+    }
+  }
+
+  dock.fillStaticYards(containerManager);
+}
+
+const initialCargoLoading = populateInitialCargo();
 
 // SPACE = ARRIVE / DEPART
 window.addEventListener('keydown', (event) => {
+  if (!gameReady) {
+    return;
+  }
+
   if (event.code === 'Space' && !event.repeat && ship.canToggle()) {
     decorativeShips.waitBeforeShipAction(() => ship.toggle());
   }
@@ -310,6 +334,120 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+function setLoadingStatus(message) {
+  if (loadingStatus) {
+    loadingStatus.textContent = message;
+  }
+}
+
+function waitForPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+async function createPrecompileRoot() {
+  const root = new THREE.Group();
+  root.name = 'PrecompileTemplates';
+
+  containerManager.templates.forEach((template) => {
+    root.add(template.model.clone(true));
+  });
+
+  for (const templateLoading of ship.templates.values()) {
+    const template = await templateLoading;
+    root.add(template.clone(true));
+  }
+
+  decorativeShips.templates.forEach((template) => {
+    root.add(template.clone(true));
+  });
+
+  return root;
+}
+
+async function precompileLook(isNight, precompileRoot) {
+  lighting.setDayNight(isNight);
+  setLoadingStatus(isNight
+    ? 'Preparing night lighting...'
+    : 'Preparing daylight...');
+  await waitForPaint();
+
+  await renderer.compileAsync(scene, camera);
+  await renderer.compileAsync(precompileRoot, camera, scene);
+
+  // Warm up shadows and Water's additional reflection render while the
+  // loading screen still covers the canvas.
+  renderer.render(scene, camera);
+}
+
+async function initializeGame() {
+  try {
+    setLoadingStatus('Loading harbor...');
+
+    await Promise.all([
+      waterNormalsLoading,
+      dock.loading,
+      truck.loading,
+      crane.loading,
+      ship.loading,
+      decorativeShips.loading,
+      initialCargoLoading
+    ]);
+
+    const precompileRoot = await createPrecompileRoot();
+    await precompileLook(false, precompileRoot);
+    await precompileLook(true, precompileRoot);
+
+    setLoadingStatus('Preparing night traffic...');
+    truck.root.visible = false;
+    await waitForPaint();
+    await renderer.compileAsync(scene, camera);
+    await renderer.compileAsync(precompileRoot, camera, scene);
+    renderer.render(scene, camera);
+    truck.root.visible = true;
+
+    lighting.setDayNight(false);
+    renderer.render(scene, camera);
+    precompileRoot.clear();
+
+    if (dayNightToggle) {
+      dayNightToggle.checked = false;
+      dayNightToggle.disabled = false;
+    }
+
+    if (sunriseToggle) {
+      sunriseToggle.checked = false;
+      sunriseToggle.disabled = false;
+    }
+
+    if (sunriseSwitch) {
+      sunriseSwitch.hidden = false;
+    }
+
+    gameReady = true;
+    cameraViews.setEnabled(true);
+    setLoadingStatus('Ready');
+    lastTime = null;
+    requestAnimationFrame(animate);
+
+    if (loadingScreen) {
+      loadingScreen.classList.add('is-hidden');
+      setTimeout(() => {
+        loadingScreen.hidden = true;
+      }, 300);
+    }
+  } catch (error) {
+    console.error('Unable to initialize the game:', error);
+
+    if (loadingScreen) {
+      loadingScreen.classList.add('is-error');
+    }
+
+    setLoadingStatus('The harbor could not be loaded. Check the console for details.');
+  }
+}
+
 // LOOP
 let lastTime = null;
 
@@ -345,4 +483,4 @@ function animate(time) {
   requestAnimationFrame(animate);
 }
 
-requestAnimationFrame(animate);
+initializeGame();

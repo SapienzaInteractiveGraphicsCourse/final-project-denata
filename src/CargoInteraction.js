@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 const PICK_RADIUS = 3;
-const PLACE_RADIUS = 3;
-const TRUCK_RADIUS = 3;
+const PLACE_RADIUS = 4;
+const TRUCK_RADIUS = 4;
 
 export class CargoInteraction {
   constructor({ crane, cargoAreas, truck, scene, physics, promptElement, blockerElement }) {

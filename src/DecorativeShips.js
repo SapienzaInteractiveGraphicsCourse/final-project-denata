@@ -60,9 +60,7 @@ export class DecorativeShips {
     this.spawningPaused = false;
     this.ready = false;
 
-    this.initialize().catch((error) => {
-      console.error('Error loading decorative ships:', error);
-    });
+    this.loading = this.initialize();
   }
 
   async initialize() {

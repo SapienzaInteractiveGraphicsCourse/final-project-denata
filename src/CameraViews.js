@@ -68,6 +68,7 @@ export class CameraViews {
     this.lastFocus = new THREE.Vector3();
     this.offset = new THREE.Vector3();
     this.buttons = [];
+    this.enabled = true;
 
     this.apply('overview', true);
     this.bindUi();
@@ -96,13 +97,22 @@ export class CameraViews {
   }
 
   setView(viewId) {
-    if (!PRESETS[viewId] || viewId === this.viewId) {
+    if (!this.enabled || !PRESETS[viewId] || viewId === this.viewId) {
       return;
     }
 
     this.viewId = viewId;
     this.apply(viewId, false);
     this.syncButtons();
+  }
+
+  setEnabled(enabled) {
+    this.enabled = enabled;
+    this.controls.enabled = enabled;
+
+    this.buttons.forEach((button) => {
+      button.disabled = !enabled;
+    });
   }
 
   apply(viewId, snap) {

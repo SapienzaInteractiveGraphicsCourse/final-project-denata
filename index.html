@@ -126,9 +126,72 @@
       background: #2c4a6e;
       color: #fff;
     }
+    #cameraViews button:disabled,
+    #lookControls input:disabled {
+      cursor: default;
+      opacity: .55;
+    }
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #10161e;
+      color: #f4f7fb;
+      opacity: 1;
+      transition: opacity .25s ease;
+    }
+    #loadingScreen.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #loadingScreen[hidden] {
+      display: none;
+    }
+    #loadingScreen .loading-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      min-width: 240px;
+      padding: 24px 30px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+    }
+    #loadingScreen .spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid rgba(255,255,255,.18);
+      border-top-color: #ffdc8a;
+      border-radius: 50%;
+      animation: loading-spin .8s linear infinite;
+    }
+    #loadingStatus {
+      font-size: 14px;
+      letter-spacing: .02em;
+    }
+    #loadingScreen.is-error .spinner {
+      display: none;
+    }
+    #loadingScreen.is-error #loadingStatus {
+      color: #ffb3aa;
+      text-align: center;
+    }
+    @keyframes loading-spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <div id="loadingScreen" role="status" aria-live="polite">
+    <div class="loading-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="loadingStatus">Loading harbor...</div>
+    </div>
+  </div>
   <div id="info">
     SPACE: make the ship arrive / depart<br />
     T: dispatch / call the truck<br />

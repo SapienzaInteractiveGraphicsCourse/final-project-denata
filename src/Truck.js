@@ -97,57 +97,49 @@ export class Truck {
       )
     );
 
-    this.loadModel();
+    this.loading = this.loadModel();
   }
 
-  loadModel() {
+  async loadModel() {
     const loader = new GLTFLoader();
 
-    loader.load(
-      '/assets/models/trucks.glb',
-      (gltf) => {
-        const model = gltf.scene;
-        const initialBox = new THREE.Box3().setFromObject(model);
-        const initialSize = initialBox.getSize(new THREE.Vector3());
-        const targetLength = 9;
-        const scale = targetLength / initialSize.z;
+    const gltf = await loader.loadAsync('/assets/models/trucks.glb');
+    const model = gltf.scene;
+    const initialBox = new THREE.Box3().setFromObject(model);
+    const initialSize = initialBox.getSize(new THREE.Vector3());
+    const targetLength = 9;
+    const scale = targetLength / initialSize.z;
 
-        model.scale.setScalar(scale);
-        model.rotation.y = Math.PI / 2;
-        model.updateMatrixWorld(true);
+    model.scale.setScalar(scale);
+    model.rotation.y = Math.PI / 2;
+    model.updateMatrixWorld(true);
 
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
 
-        model.position.set(-center.x, -box.min.y, -center.z);
-        this.model = model;
-        this.wheels = ['FR', 'FL', 'RL', 'RR']
-          .map((name) => model.getObjectByName(name))
-          .filter(Boolean);
-        this.root.add(model);
-        model.updateMatrixWorld(true);
+    model.position.set(-center.x, -box.min.y, -center.z);
+    this.model = model;
+    this.wheels = ['FR', 'FL', 'RL', 'RR']
+      .map((name) => model.getObjectByName(name))
+      .filter(Boolean);
+    this.root.add(model);
+    model.updateMatrixWorld(true);
 
-        this.placeCargoOnTrailer(model);
+    this.placeCargoOnTrailer(model);
 
-        if (this.wheels.length > 0) {
-          const wheelBox = new THREE.Box3().setFromObject(this.wheels[0]);
-          const wheelSize = wheelBox.getSize(new THREE.Vector3());
-          this.wheelRadius = wheelSize.y / 2;
-        }
+    if (this.wheels.length > 0) {
+      const wheelBox = new THREE.Box3().setFromObject(this.wheels[0]);
+      const wheelSize = wheelBox.getSize(new THREE.Vector3());
+      this.wheelRadius = wheelSize.y / 2;
+    }
 
-        this.setupLights();
-        enableShadows(this.root);
-        this.setProgress(0, 1);
-        this.root.updateMatrixWorld(true);
+    this.setupLights();
+    enableShadows(this.root);
+    this.setProgress(0, 1);
+    this.root.updateMatrixWorld(true);
 
-        this.root.visible = true;
-        this.state = 'parked';
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading truck:', error);
-      }
-    );
+    this.root.visible = true;
+    this.state = 'parked';
   }
 
   placeCargoOnTrailer(model) {

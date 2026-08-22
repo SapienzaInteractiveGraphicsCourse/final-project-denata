@@ -24,88 +24,80 @@ export class Crane {
     this.cabinAnchor = null;
     this.cabinForward = new THREE.Vector3();
 
-    this.loadModel();
+    this.loading = this.loadModel();
   }
 
-  loadModel() {
+  async loadModel() {
     const loader = new GLTFLoader();
 
-    loader.load(
-      '/assets/models/Crane_Modified3.glb',
-      (gltf) => {
-        const model = gltf.scene;
+    const gltf = await loader.loadAsync('/assets/models/Crane_Modified3.glb');
+    const model = gltf.scene;
 
-        model.scale.setScalar(0.5885823965072632);
-        model.rotation.y = -Math.PI ;
-        model.updateMatrixWorld(true);
+    model.scale.setScalar(0.5885823965072632);
+    model.rotation.y = -Math.PI ;
+    model.updateMatrixWorld(true);
 
-        const base = model.getObjectByName('Base_Base_Platform');
-        const wheels = model.getObjectByName('Base_Crane_Wheel_Set');
-        const baseBox = new THREE.Box3().setFromObject(base);
-        const wheelBox = new THREE.Box3().setFromObject(wheels);
-        const baseCenter = baseBox.getCenter(new THREE.Vector3());
+    const base = model.getObjectByName('Base_Base_Platform');
+    const wheels = model.getObjectByName('Base_Crane_Wheel_Set');
+    const baseBox = new THREE.Box3().setFromObject(base);
+    const wheelBox = new THREE.Box3().setFromObject(wheels);
+    const baseCenter = baseBox.getCenter(new THREE.Vector3());
 
-        model.position.set(
-          -baseCenter.x,
-          -wheelBox.min.y,
-          -baseCenter.z
-        );
-
-        const partNames = [
-          'Crane_CTRL_Empty',
-          'Base_Base_Platform',
-          'Base_Crane_Wheel_Set',
-          'Platform_Body',
-          'Boom',
-          'Cables_front_arcs',
-          'Cable_rear_arcs',
-          'Crane_Spreader',
-          'Crane_Tower',
-          'Installations',
-          'Piston',
-          'Rear_cables',
-          'Upper_Cable_01',
-          'Upper_Cable_02',
-          'Upper_Cable_03',
-          'Upper_Cable_04',
-          'Upper_Cable_05',
-          'Upper_Cable_06',
-          'Vertical_Cables',
-          'Wheel_01',
-          'Wheel_02',
-          'Wheel_03',
-          'Wheel_04',
-          'Wheel_05',
-          'Wheel_06',
-          'Wheel_07',
-          'Wheel_08',
-          'Wheel_09',
-          'Wheel_10',
-          'Wheel_11',
-          'Wheel_12'
-        ];
-
-        partNames.forEach((name) => {
-          this.parts[name] = model.getObjectByName(name);
-        });
-
-        // Keep the upper body facing the direction used before the crane was turned.
-        this.parts.Platform_Body.rotation.y = Math.PI / 2;
-        this.restUpperBodyYaw = this.parts.Platform_Body.rotation.y;
-
-        this.model = model;
-        this.root.add(model);
-        model.updateMatrixWorld(true);
-        this.setupWheels();
-        this.setupBoomAnimation();
-        this.setupLights();
-        enableShadows(this.root);
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading crane:', error);
-      }
+    model.position.set(
+      -baseCenter.x,
+      -wheelBox.min.y,
+      -baseCenter.z
     );
+
+    const partNames = [
+      'Crane_CTRL_Empty',
+      'Base_Base_Platform',
+      'Base_Crane_Wheel_Set',
+      'Platform_Body',
+      'Boom',
+      'Cables_front_arcs',
+      'Cable_rear_arcs',
+      'Crane_Spreader',
+      'Crane_Tower',
+      'Installations',
+      'Piston',
+      'Rear_cables',
+      'Upper_Cable_01',
+      'Upper_Cable_02',
+      'Upper_Cable_03',
+      'Upper_Cable_04',
+      'Upper_Cable_05',
+      'Upper_Cable_06',
+      'Vertical_Cables',
+      'Wheel_01',
+      'Wheel_02',
+      'Wheel_03',
+      'Wheel_04',
+      'Wheel_05',
+      'Wheel_06',
+      'Wheel_07',
+      'Wheel_08',
+      'Wheel_09',
+      'Wheel_10',
+      'Wheel_11',
+      'Wheel_12'
+    ];
+
+    partNames.forEach((name) => {
+      this.parts[name] = model.getObjectByName(name);
+    });
+
+    // Keep the upper body facing the direction used before the crane was turned.
+    this.parts.Platform_Body.rotation.y = Math.PI / 2;
+    this.restUpperBodyYaw = this.parts.Platform_Body.rotation.y;
+
+    this.model = model;
+    this.root.add(model);
+    model.updateMatrixWorld(true);
+    this.setupWheels();
+    this.setupBoomAnimation();
+    this.setupLights();
+    enableShadows(this.root);
   }
 
   setupWheels() {
