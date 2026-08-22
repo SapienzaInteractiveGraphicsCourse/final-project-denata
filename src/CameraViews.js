@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const VIEW_IDS = ['overview', 'crane', 'cabin', 'ship', 'truck'];
+const VIEW_IDS = ['overview', 'crane', 'cabin', 'ship', 'truck', 'worker', 'workerFp'];
 
 const PRESETS = {
   overview: {
@@ -50,14 +50,29 @@ const PRESETS = {
     maxPolarAngle: Math.PI / 2 - 0.12,
     panCenter: new THREE.Vector3(-16, 4, 32),
     panRadius: 22
+  },
+  worker: {
+    minDistance: 4,
+    maxDistance: 14,
+    minPolarAngle: 0.35,
+    maxPolarAngle: Math.PI / 2 - 0.15,
+    followWorker: true
+  },
+  workerFp: {
+    minDistance: 1,
+    maxDistance: 4,
+    minPolarAngle: 0,
+    maxPolarAngle: Math.PI,
+    workerFirstPerson: true
   }
 };
 
 export class CameraViews {
-  constructor({ camera, controls, crane }) {
+  constructor({ camera, controls, crane, worker }) {
     this.camera = camera;
     this.controls = controls;
     this.crane = crane;
+    this.worker = worker;
     this.viewId = 'overview';
     this.switchT = 1;
     this.fromPos = new THREE.Vector3();
@@ -122,9 +137,9 @@ export class CameraViews {
     this.controls.maxDistance = preset.maxDistance;
     this.controls.minPolarAngle = preset.minPolarAngle;
     this.controls.maxPolarAngle = preset.maxPolarAngle;
-    this.controls.enableRotate = !preset.firstPerson;
-    this.controls.enablePan = !preset.firstPerson;
-    this.controls.enableZoom = !preset.firstPerson;
+    this.controls.enableRotate = !this.isLocked(preset);
+    this.controls.enablePan = !this.isLocked(preset);
+    this.controls.enableZoom = !this.isLocked(preset);
     this.controls.enableDamping = false;
 
     this.fillPose(preset, this.toPos, this.toTarget);
@@ -146,6 +161,16 @@ export class CameraViews {
   fillPose(preset, outPos, outTarget) {
     if (preset.firstPerson) {
       this.crane.getCabinPose(outPos, outTarget);
+      return;
+    }
+
+    if (preset.followWorker) {
+      this.worker.getCameraPose(outPos, outTarget);
+      return;
+    }
+
+    if (preset.workerFirstPerson) {
+      this.worker.getFirstPersonPose(outPos, outTarget);
       return;
     }
 
@@ -190,7 +215,7 @@ export class CameraViews {
     const preset = PRESETS[this.viewId];
 
     if (this.switchT < 1) {
-      if (preset.follow || preset.firstPerson) {
+      if (preset.follow || this.isLocked(preset)) {
         this.fillPose(preset, this.toPos, this.toTarget);
       }
 
@@ -201,10 +226,18 @@ export class CameraViews {
       this.controls.target.lerpVectors(this.fromTarget, this.toTarget, t);
 
       if (this.switchT >= 1) {
-        this.controls.enableDamping = !preset.firstPerson;
+        this.controls.enableDamping = !this.isLocked(preset);
       }
     } else if (preset.firstPerson) {
       this.crane.getCabinPose(this.camera.position, this.controls.target);
+      this.camera.lookAt(this.controls.target);
+      return;
+    } else if (preset.followWorker) {
+      this.worker.getCameraPose(this.camera.position, this.controls.target);
+      this.camera.lookAt(this.controls.target);
+      return;
+    } else if (preset.workerFirstPerson) {
+      this.worker.getFirstPersonPose(this.camera.position, this.controls.target);
       this.camera.lookAt(this.controls.target);
       return;
     } else if (preset.follow) {
@@ -222,13 +255,25 @@ export class CameraViews {
       this.camera.position.copy(this.controls.target).add(this.offset);
     }
 
-    if (preset.firstPerson) {
+    if (this.isLocked(preset)) {
       this.camera.lookAt(this.controls.target);
       return;
     }
 
     this.clampTarget(preset);
     this.controls.update();
+  }
+
+  isLocked(preset) {
+    return preset.firstPerson || preset.followWorker || preset.workerFirstPerson;
+  }
+
+  isWorkerView() {
+    return this.viewId === 'worker' || this.viewId === 'workerFp';
+  }
+
+  isWorkerFirstPerson() {
+    return this.viewId === 'workerFp';
   }
 
   syncButtons() {
