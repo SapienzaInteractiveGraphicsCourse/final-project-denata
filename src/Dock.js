@@ -32,6 +32,50 @@ const FUEL_TRUCK = {
   length: 13,
   rotationY: Math.PI / 2
 };
+const DAMAGED_FENCE_URL = '/assets/models/damaged_chainlink_fence.glb';
+const FENCE_SECTION_LENGTH = 3.5;
+const FENCE_SECTION_HEIGHT = 2.8;
+const FENCE_GAP = 0.1;
+const FENCE_CORNER_CLEARANCE = 0.1;
+const FENCE_END_CLEARANCE = 0.05;
+const FENCE_VARIANT_PARTS = [
+  ['Cylinder', 'Cube', 'Cylinder.001', 'Cylinder.002', 'Plane.001'],
+  ['Cylinder.003', 'Cube.001', 'Cylinder.004', 'Cylinder.005', 'Plane.002'],
+  ['Cylinder.006', 'Cube.002', 'Cylinder.007', 'Cylinder.008', 'Plane.003'],
+  ['Cylinder.009', 'Cube.003', 'Cylinder.010', 'Cylinder.011', 'Plane.005'],
+  ['Cylinder.012', 'Cube.004', 'Cylinder.013', 'Cylinder.014', 'Plane.006']
+];
+const FENCE_PATHS = [
+  [
+    [-8, 24.5],
+    [-24, 24.5],
+    [-26.5, 26],
+    [-27.5, 29],
+    [-27.5, 55],
+    [-26.5, 58]
+  ],
+  [
+    [-8, 59.5],
+    [-5.5, 58],
+    [-4.5, 55],
+    [-4.5, 29]
+  ],
+  [
+    [-17, 27],
+    [-17, 58.5]
+  ]
+];
+const OIL_BARRELS_URL = '/assets/models/collection_of_oil_barrels..glb';
+const BARREL_HEIGHT = 0.9;
+const BARREL_DIAMETER = 0.6;
+const PLASTIC_WATER_CONTAINER_URL =
+  '/assets/models/plastic_water_container_-_4mb.glb';
+const PLASTIC_WATER_CONTAINER_HEIGHT = 1.25;
+const PLASTIC_WATER_CONTAINER_POSITIONS = [
+  new THREE.Vector3(14, 2, 68.5),
+  new THREE.Vector3(17, 2, 71),
+  new THREE.Vector3(13.5, 2, 72.5)
+];
 const INDUSTRIAL_BUILDING = {
   name: 'Industrial_Building_10',
   position: new THREE.Vector3(4, 2, 86),
@@ -288,6 +332,53 @@ function createDepotLayout() {
   return layout;
 }
 
+function createFenceTypeSequence() {
+  let state = 0x5f3759df;
+  const random = () => {
+    state |= 0;
+    state = (state + 0x6d2b79f5) | 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const sequence = [];
+  const proportionsPerTwenty = [14, 2, 1, 2, 1];
+
+  for (let cycle = 0; cycle < 5; cycle += 1) {
+    const group = [];
+    proportionsPerTwenty.forEach((count, typeIndex) => {
+      for (let index = 0; index < count; index += 1) {
+        group.push(typeIndex);
+      }
+    });
+
+    for (let index = group.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(random() * (index + 1));
+      [group[index], group[swapIndex]] = [group[swapIndex], group[index]];
+    }
+    sequence.push(...group);
+  }
+
+  return sequence;
+}
+
+const FENCE_TYPE_SEQUENCE = createFenceTypeSequence();
+
+function createSeededRandom(seed) {
+  let state = seed;
+
+  return () => {
+    state |= 0;
+    state = (state + 0x6d2b79f5) | 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export class Dock {
   constructor() {
     this.root = new THREE.Group();
@@ -301,7 +392,10 @@ export class Dock {
       this.createStreetLamps(),
       this.createIndustrialBuildings(),
       this.createForklift(),
-      this.createFuelTruck()
+      this.createFuelTruck(),
+      this.createFences(),
+      this.createOilBarrels(),
+      this.createPlasticWaterContainers()
     ]);
 
     enableShadows(this.platform, false);
@@ -707,6 +801,433 @@ export class Dock {
     const gltf = await loader.loadAsync(FUEL_TRUCK_URL);
 
     this.fuelTruck = this.createAsset(gltf.scene, FUEL_TRUCK, 'FuelTruck');
+  }
+
+  async createOilBarrels() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(OIL_BARRELS_URL);
+    const sourceRoot = gltf.scene.getObjectByName('GLTF_SceneRootNode');
+
+    if (!sourceRoot) {
+      throw new Error('GLTF_SceneRootNode was not found in the oil barrels GLB');
+    }
+
+    gltf.scene.updateMatrixWorld(true);
+    const variants = sourceRoot.children.filter((child) => {
+      let containsMesh = false;
+      child.traverse((descendant) => {
+        containsMesh ||= descendant.isMesh;
+      });
+      return containsMesh;
+    });
+    const placements = this.createOilBarrelPlacements(variants.length);
+    const placementsByType = variants.map(() => []);
+
+    placements.forEach((placement) => {
+      placementsByType[placement.typeIndex].push(placement);
+    });
+
+    this.oilBarrels = new THREE.Group();
+    this.oilBarrels.name = 'OilBarrels';
+
+    variants.forEach((source, typeIndex) => {
+      const typePlacements = placementsByType[typeIndex];
+      if (!typePlacements.length) return;
+
+      const template = this.preparePropTemplate(source, BARREL_HEIGHT, true);
+
+      template.meshes.forEach((meshData, meshIndex) => {
+        const instances = new THREE.InstancedMesh(
+          meshData.geometry,
+          meshData.material,
+          typePlacements.length
+        );
+        instances.name = `OilBarrel_${typeIndex + 1}_${meshIndex + 1}`;
+        instances.castShadow = false;
+        instances.receiveShadow = true;
+
+        typePlacements.forEach((placement, instanceIndex) => {
+          const rotation = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(
+              placement.fallen ? Math.PI / 2 : 0,
+              placement.rotationY,
+              placement.fallen ? placement.roll : 0,
+              'YXZ'
+            )
+          );
+          const placementMatrix = new THREE.Matrix4().compose(
+            new THREE.Vector3(placement.x, placement.y, placement.z),
+            rotation,
+            new THREE.Vector3(1, 1, 1)
+          );
+          const instanceMatrix = placementMatrix
+            .multiply(template.normalizationMatrix)
+            .multiply(meshData.worldMatrix);
+          instances.setMatrixAt(instanceIndex, instanceMatrix);
+        });
+
+        instances.instanceMatrix.needsUpdate = true;
+        instances.computeBoundingBox();
+        instances.computeBoundingSphere();
+        this.oilBarrels.add(instances);
+      });
+    });
+
+    this.root.add(this.oilBarrels);
+  }
+
+  createOilBarrelPlacements(typeCount) {
+    const random = createSeededRandom(0x0b411e15);
+    const placements = [];
+    const addBarrel = (x, y, z, fallen = false) => {
+      placements.push({
+        x,
+        y,
+        z,
+        fallen,
+        rotationY: random() * Math.PI * 2,
+        roll: (random() - 0.5) * 0.24,
+        typeIndex: Math.floor(random() * typeCount)
+      });
+    };
+
+    const irregularOffsets = [
+      [0, 0],
+      [0.72, 0.08],
+      [-0.66, 0.15],
+      [0.16, 0.68],
+      [-0.22, -0.66],
+      [0.7, 0.72],
+      [-0.7, -0.58]
+    ];
+
+    // Three compact, irregular groups in the part of the shed facing the crane.
+    // extraLevels controls the barrels stacked above each barrel on the ground.
+    const shedGroups = [
+      { x: 22.1, z: 52.8, count: 7, extraLevels: [2, 1, 0, 0, 0, 0, 0] },
+      { x: 24.7, z: 54.7, count: 6, extraLevels: [1, 1, 1, 0, 0, 0] },
+      { x: 22.2, z: 57.3, count: 6, extraLevels: [1, 1, 0, 0, 0, 0] }
+    ];
+
+    shedGroups.forEach((group) => {
+      for (let index = 0; index < group.count; index += 1) {
+        const [offsetX, offsetZ] = irregularOffsets[index];
+        const x = group.x + offsetX + (random() - 0.5) * 0.1;
+        const z = group.z + offsetZ + (random() - 0.5) * 0.1;
+        addBarrel(x, 2 + BARREL_HEIGHT / 2, z);
+
+        for (let level = 1; level <= group.extraLevels[index]; level += 1) {
+          addBarrel(x, 2 + BARREL_HEIGHT * (level + 0.5), z);
+        }
+      }
+    });
+
+    // Fallen barrels stay away from the three upright groups and from each other.
+    addBarrel(22, 2 + BARREL_DIAMETER / 2, 62.4, true);
+    addBarrel(27.2, 2 + BARREL_DIAMETER / 2, 64.6, true);
+    addBarrel(22.1, 2 + BARREL_DIAMETER / 2, 67.1, true);
+
+    // A single compact, irregular group in the external green area.
+    const externalOffsets = [
+      [0, 0],
+      [0.7, 0.08],
+      [-0.65, 0.13],
+      [0.12, 0.66],
+      [-0.16, -0.65],
+      [0.66, 0.7],
+      [-0.68, -0.58],
+      [0.88, -0.5]
+    ];
+    externalOffsets.forEach(([offsetX, offsetZ]) => {
+      addBarrel(
+        20.2 + offsetX + (random() - 0.5) * 0.08,
+        2 + BARREL_HEIGHT / 2,
+        70.9 + offsetZ + (random() - 0.5) * 0.08
+      );
+    });
+
+    // The two external fallen barrels are isolated from the upright group.
+    addBarrel(24.3, 2 + BARREL_DIAMETER / 2, 69.5, true);
+    addBarrel(25.2, 2 + BARREL_DIAMETER / 2, 72.8, true);
+
+    // Compact group beside the water tower: six bases, two stacked and two fallen.
+    const watertowerBarrels = [
+      [-19.4, 31.8],
+      [-18.7, 31.9],
+      [-20.05, 32.15],
+      [-19.25, 32.55],
+      [-18.5, 32.65],
+      [-19.85, 33]
+    ];
+    watertowerBarrels.forEach(([x, z]) => {
+      addBarrel(x, 2 + BARREL_HEIGHT / 2, z);
+    });
+    addBarrel(-19.4, 2 + BARREL_HEIGHT * 1.5, 31.8);
+    addBarrel(-18.5, 2 + BARREL_HEIGHT * 1.5, 32.65);
+    addBarrel(-17.9, 2 + BARREL_DIAMETER / 2, 30.5, true);
+    addBarrel(-20.7, 2 + BARREL_DIAMETER / 2, 34.1, true);
+
+    // Three-barrel pyramid in the small space on the right.
+    addBarrel(-6.75, 2 + BARREL_HEIGHT / 2, 25.75);
+    addBarrel(-6.15, 2 + BARREL_HEIGHT / 2, 25.75);
+    addBarrel(-6.45, 2 + BARREL_HEIGHT * 1.5, 25.75);
+
+    return placements;
+  }
+
+  async createPlasticWaterContainers() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(PLASTIC_WATER_CONTAINER_URL);
+    const sourceRoot = gltf.scene.getObjectByName('RootNode');
+
+    if (!sourceRoot) {
+      throw new Error('RootNode was not found in the plastic water container GLB');
+    }
+
+    gltf.scene.updateMatrixWorld(true);
+    this.plasticWaterContainers = new THREE.Group();
+    this.plasticWaterContainers.name = 'PlasticWaterContainers';
+
+    PLASTIC_WATER_CONTAINER_POSITIONS.forEach((position, index) => {
+      const source = sourceRoot.children[index % sourceRoot.children.length];
+      const template = this.preparePropTemplate(
+        source,
+        PLASTIC_WATER_CONTAINER_HEIGHT,
+        false
+      );
+
+      template.meshes.forEach((meshData, meshIndex) => {
+        const instance = new THREE.InstancedMesh(
+          meshData.geometry,
+          meshData.material,
+          1
+        );
+        instance.name = `PlasticWaterContainer_${index + 1}_${meshIndex + 1}`;
+        instance.castShadow = false;
+        instance.receiveShadow = true;
+
+        const placementMatrix = new THREE.Matrix4().makeRotationY(
+          [-0.2, 0.35, -0.45][index]
+        );
+        placementMatrix.setPosition(position);
+        instance.setMatrixAt(
+          0,
+          placementMatrix
+            .multiply(template.normalizationMatrix)
+            .multiply(meshData.worldMatrix)
+        );
+        instance.instanceMatrix.needsUpdate = true;
+        instance.computeBoundingBox();
+        instance.computeBoundingSphere();
+        this.plasticWaterContainers.add(instance);
+      });
+    });
+
+    this.root.add(this.plasticWaterContainers);
+  }
+
+  preparePropTemplate(source, targetHeight, centerVertically) {
+    const meshes = [];
+    const box = new THREE.Box3();
+
+    source.traverse((child) => {
+      if (!child.isMesh) return;
+
+      child.geometry.computeBoundingBox();
+      const worldMatrix = child.matrixWorld.clone();
+      box.union(
+        child.geometry.boundingBox.clone().applyMatrix4(worldMatrix)
+      );
+      meshes.push({
+        geometry: child.geometry,
+        material: child.material,
+        worldMatrix
+      });
+    });
+
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const moveToOrigin = new THREE.Matrix4().makeTranslation(
+      -center.x,
+      centerVertically ? -center.y : -box.min.y,
+      -center.z
+    );
+    const uniformScale = targetHeight / size.y;
+    const resize = new THREE.Matrix4().makeScale(
+      uniformScale,
+      uniformScale,
+      uniformScale
+    );
+
+    return {
+      meshes,
+      normalizationMatrix: resize.multiply(moveToOrigin)
+    };
+  }
+
+  async createFences() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(DAMAGED_FENCE_URL);
+    const sourceRoot = gltf.scene.getObjectByName('RootNode');
+
+    if (!sourceRoot) {
+      throw new Error('RootNode was not found in damaged_chainlink_fence.glb');
+    }
+
+    gltf.scene.updateMatrixWorld(true);
+    const placements = this.createFencePlacements();
+    const placementsByType = FENCE_VARIANT_PARTS.map(() => []);
+
+    placements.forEach((placement, index) => {
+      const typeIndex = FENCE_TYPE_SEQUENCE[index % FENCE_TYPE_SEQUENCE.length];
+      placementsByType[typeIndex].push(placement);
+    });
+
+    this.fences = new THREE.Group();
+    this.fences.name = 'DamagedChainlinkFences';
+
+    FENCE_VARIANT_PARTS.forEach((partNames, typeIndex) => {
+      const typePlacements = placementsByType[typeIndex];
+      if (!typePlacements.length) return;
+
+      const template = this.prepareFenceTemplate(sourceRoot, partNames);
+
+      template.meshes.forEach((meshData, meshIndex) => {
+        const instances = new THREE.InstancedMesh(
+          meshData.geometry,
+          meshData.material,
+          typePlacements.length
+        );
+        instances.name = `Damaged_Chainlink_Fence_${typeIndex + 1}_${meshIndex + 1}`;
+        instances.castShadow = false;
+        instances.receiveShadow = true;
+
+        typePlacements.forEach((placement, instanceIndex) => {
+          const placementMatrix = new THREE.Matrix4().makeRotationY(
+            placement.rotationY
+          );
+          placementMatrix.setPosition(placement.x, 2, placement.z);
+          placementMatrix.scale(
+            new THREE.Vector3(1, 1, placement.length / FENCE_SECTION_LENGTH)
+          );
+
+          const instanceMatrix = placementMatrix
+            .clone()
+            .multiply(template.normalizationMatrix)
+            .multiply(meshData.worldMatrix);
+          instances.setMatrixAt(instanceIndex, instanceMatrix);
+        });
+
+        instances.instanceMatrix.needsUpdate = true;
+        instances.computeBoundingBox();
+        instances.computeBoundingSphere();
+        this.fences.add(instances);
+      });
+    });
+
+    this.root.add(this.fences);
+  }
+
+  createFencePlacements() {
+    const placements = [];
+
+    FENCE_PATHS.forEach((points) => {
+      for (let segmentIndex = 0; segmentIndex < points.length - 1; segmentIndex += 1) {
+        const [x1, z1] = points[segmentIndex];
+        const [x2, z2] = points[segmentIndex + 1];
+        const dx = x2 - x1;
+        const dz = z2 - z1;
+        const segmentLength = Math.hypot(dx, dz);
+        const startClearance = segmentIndex === 0
+          ? FENCE_END_CLEARANCE
+          : FENCE_CORNER_CLEARANCE;
+        const endClearance = segmentIndex === points.length - 2
+          ? FENCE_END_CLEARANCE
+          : FENCE_CORNER_CLEARANCE;
+        const usableLength = segmentLength - startClearance - endClearance;
+        const count = Math.max(
+          1,
+          Math.round(
+            (usableLength + FENCE_GAP)
+            / (FENCE_SECTION_LENGTH + FENCE_GAP)
+          )
+        );
+
+        const sectionLength = (
+          usableLength - (count - 1) * FENCE_GAP
+        ) / count;
+        const unitX = dx / segmentLength;
+        const unitZ = dz / segmentLength;
+
+        for (let index = 0; index < count; index += 1) {
+          const distance = startClearance
+            + sectionLength / 2
+            + index * (sectionLength + FENCE_GAP);
+
+          placements.push({
+            x: x1 + unitX * distance,
+            z: z1 + unitZ * distance,
+            length: sectionLength,
+            rotationY: Math.atan2(unitX, unitZ)
+          });
+        }
+      }
+    });
+
+    return placements;
+  }
+
+  prepareFenceTemplate(sourceRoot, partNames) {
+    const meshes = [];
+    const box = new THREE.Box3();
+    const normalizedName = (name) => name.replaceAll('.', '');
+
+    partNames.forEach((partName) => {
+      const part = sourceRoot.children.find(child => (
+        normalizedName(child.name) === normalizedName(partName)
+      ));
+      const affectsTemplateBounds = !partName.startsWith('Plane');
+
+      if (!part) {
+        throw new Error(`${partName} was not found in damaged_chainlink_fence.glb`);
+      }
+
+      part.traverse((child) => {
+        if (!child.isMesh) return;
+
+        child.geometry.computeBoundingBox();
+        const worldMatrix = child.matrixWorld.clone();
+        const worldBox = child.geometry.boundingBox
+          .clone()
+          .applyMatrix4(worldMatrix);
+        if (affectsTemplateBounds) {
+          box.union(worldBox);
+        }
+        meshes.push({
+          geometry: child.geometry,
+          material: child.material,
+          worldMatrix
+        });
+      });
+    });
+
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const centerOnGround = new THREE.Matrix4().makeTranslation(
+      -center.x,
+      -box.min.y,
+      -center.z
+    );
+    const resize = new THREE.Matrix4().makeScale(
+      FENCE_SECTION_HEIGHT / size.y,
+      FENCE_SECTION_HEIGHT / size.y,
+      FENCE_SECTION_LENGTH / size.z
+    );
+
+    return {
+      meshes,
+      normalizationMatrix: resize.multiply(centerOnGround)
+    };
   }
 
   createIndustrialAsset(sourceScene, config) {
