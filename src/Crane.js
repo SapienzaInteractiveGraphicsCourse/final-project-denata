@@ -18,7 +18,7 @@ export class Crane {
     this.restUpperBodyYaw = 0;
     this.travelSpeed = 1.5;
     this.minTravelZ = 18;
-    this.maxTravelZ = 70;
+    this.maxTravelZ = 50;
     this.nightLights = [];
     this.nightLightsOn = false;
     this.cabinAnchor = null;
@@ -93,7 +93,7 @@ export class Crane {
 
     this.model = model;
     this.root.add(model);
-    model.updateMatrixWorld(true);
+    this.root.updateWorldMatrix(true, true);
     this.setupWheels();
     this.setupBoomAnimation();
     this.setupLights();

@@ -75,7 +75,7 @@ const FENCE_PATHS = [
     [-17, 58.5]
   ]
 ];
-const OIL_BARRELS_URL = '/assets/models/collection_of_oil_barrels..glb';
+const OIL_BARRELS_URL = '/assets/models/oil_barrel_opt.glb';
 const BARREL_HEIGHT = 0.9;
 const BARREL_DIAMETER = 0.6;
 const PLASTIC_WATER_CONTAINER_URL =
@@ -980,10 +980,13 @@ export class Dock {
   async createOilBarrels() {
     const loader = new GLTFLoader();
     const gltf = await loader.loadAsync(OIL_BARRELS_URL);
-    const sourceRoot = gltf.scene.getObjectByName('GLTF_SceneRootNode');
 
-    if (!sourceRoot) {
-      throw new Error('GLTF_SceneRootNode was not found in the oil barrels GLB');
+    let sourceRoot = gltf.scene;
+    while (
+      sourceRoot.children.length === 1
+      && !sourceRoot.children[0].isMesh
+    ) {
+      sourceRoot = sourceRoot.children[0];
     }
 
     gltf.scene.updateMatrixWorld(true);
@@ -994,6 +997,10 @@ export class Dock {
       });
       return containsMesh;
     });
+
+    if (!variants.length) {
+      throw new Error('No barrel variants were found in the oil barrels GLB');
+    }
     const placements = this.createOilBarrelPlacements(variants.length);
     const placementsByType = variants.map(() => []);
 
@@ -1053,16 +1060,28 @@ export class Dock {
   createOilBarrelPlacements(typeCount) {
     const random = createSeededRandom(0x0b411e15);
     const placements = [];
-    const addBarrel = (x, y, z, fallen = false) => {
+    const addBarrel = (x, y, z, fallen = false, forcedTypeIndex = null) => {
+      const rotationY = random() * Math.PI * 2;
+      const roll = (random() - 0.5) * 0.24;
+      const randomTypeIndex = Math.floor(random() * typeCount);
       placements.push({
         x,
         y,
         z,
         fallen,
-        rotationY: random() * Math.PI * 2,
-        roll: (random() - 0.5) * 0.24,
-        typeIndex: Math.floor(random() * typeCount)
+        rotationY,
+        roll,
+        typeIndex: forcedTypeIndex ?? randomTypeIndex
       });
+    };
+
+    const shedVariantOrder = [0, 1, 2, 3, 5, 6, 4, 7]
+      .filter((typeIndex) => typeIndex < typeCount);
+    let shedVariantIndex = 0;
+    const nextShedVariant = () => {
+      const typeIndex = shedVariantOrder[shedVariantIndex % shedVariantOrder.length];
+      shedVariantIndex += 1;
+      return typeIndex;
     };
 
     const irregularOffsets = [
@@ -1088,18 +1107,42 @@ export class Dock {
         const [offsetX, offsetZ] = irregularOffsets[index];
         const x = group.x + offsetX + (random() - 0.5) * 0.1;
         const z = group.z + offsetZ + (random() - 0.5) * 0.1;
-        addBarrel(x, 2 + BARREL_HEIGHT / 2, z);
+        addBarrel(x, 2 + BARREL_HEIGHT / 2, z, false, nextShedVariant());
 
         for (let level = 1; level <= group.extraLevels[index]; level += 1) {
-          addBarrel(x, 2 + BARREL_HEIGHT * (level + 0.5), z);
+          addBarrel(
+            x,
+            2 + BARREL_HEIGHT * (level + 0.5),
+            z,
+            false,
+            nextShedVariant()
+          );
         }
       }
     });
 
     // Fallen barrels stay away from the three upright groups and from each other.
-    addBarrel(22, 2 + BARREL_DIAMETER / 2, 62.4, true);
-    addBarrel(27.2, 2 + BARREL_DIAMETER / 2, 64.6, true);
-    addBarrel(22.1, 2 + BARREL_DIAMETER / 2, 67.1, true);
+    addBarrel(
+      22,
+      2 + BARREL_DIAMETER / 2,
+      62.4,
+      true,
+      nextShedVariant()
+    );
+    addBarrel(
+      27.2,
+      2 + BARREL_DIAMETER / 2,
+      64.6,
+      true,
+      nextShedVariant()
+    );
+    addBarrel(
+      22.1,
+      2 + BARREL_DIAMETER / 2,
+      67.1,
+      true,
+      nextShedVariant()
+    );
 
     // A single compact, irregular group in the external green area.
     const externalOffsets = [

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { enableShadows } from './Lighting.js';
 
@@ -44,11 +43,9 @@ export class Worker {
   }
 
   async loadModel() {
-    const loader = new FBXLoader();
-    const model = await loader.loadAsync('/assets/models/man_work.fbx');
-
-    // Imported Mixamo clips are ignored on purpose.
-    model.animations = [];
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync('/assets/models/Worker.glb');
+    const model = gltf.scene;
     const initialBox = new THREE.Box3().setFromObject(model);
     const initialSize = initialBox.getSize(new THREE.Vector3());
     const scale = 1.75 / initialSize.y;

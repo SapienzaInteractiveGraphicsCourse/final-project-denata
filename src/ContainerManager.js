@@ -8,20 +8,20 @@ const CONTAINER_TYPES = [
   { id: 'classic', url: '/assets/models/20ft_container.glb', weight: 2 },
   {
     id: 'cargo-blue',
-    url: '/assets/models/containers/cargo_container.glb',
-    objectName: 'containerB',
+    url: '/assets/models/containers/cargo_container_new.glb',
+    objectName: 'Object_6',
     weight: 1
   },
   {
     id: 'cargo-green',
-    url: '/assets/models/containers/cargo_container.glb',
-    objectName: 'containerfVG',
+    url: '/assets/models/containers/cargo_container_new.glb',
+    objectName: 'Object_8',
     weight: 1
   },
   {
     id: 'cargo-red',
-    url: '/assets/models/containers/cargo_container.glb',
-    objectName: 'containerfR',
+    url: '/assets/models/containers/cargo_container_new.glb',
+    objectName: 'Object_10',
     weight: 1
   },
   {
