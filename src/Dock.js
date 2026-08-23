@@ -16,6 +16,16 @@ const LAMP_GROUND_Y = 2;
 const ROAD_Y = 2.03;
 const ROAD_THICKNESS = 0.06;
 const ROAD_WIDTH = 6;
+const DOCK_WIDTH = 1200;
+const DOCK_LENGTH = 600;
+const DOCK_TEXTURE_SIZE = 6;
+const DOCK_TEXTURE_DESATURATION = 0.65;
+const DOCK_CONCRETE_DIFFUSE_URL =
+  '/assets/textures/concrete/brushed_concrete_2_diff_2k.jpg';
+const DOCK_CONCRETE_NORMAL_URL =
+  '/assets/textures/concrete/brushed_concrete_2_nor_gl_2k.jpg';
+const DOCK_CONCRETE_ROUGHNESS_URL =
+  '/assets/textures/concrete/brushed_concrete_2_rough_2k.jpg';
 const INDUSTRIAL_BUILDING_URL =
   '/assets/models/industrial_buildings_set_-_low_poly_models.glb';
 const FORKLIFT_URL = '/assets/models/forklift_low_poly.glb';
@@ -379,16 +389,136 @@ function createSeededRandom(seed) {
   };
 }
 
+function addDockTextureOrientationVariation(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+
+      float dockTileHash(vec2 tile) {
+        return fract(sin(dot(tile, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+
+      vec2 rotateDockTileUv(vec2 uv, float quarterTurns) {
+        vec2 tile = floor(uv);
+        vec2 localUv = fract(uv);
+
+        if (quarterTurns < 0.5) return tile + localUv;
+        if (quarterTurns < 1.5) return tile + vec2(1.0 - localUv.y, localUv.x);
+        if (quarterTurns < 2.5) return tile + vec2(1.0 - localUv.x, 1.0 - localUv.y);
+        return tile + vec2(localUv.y, 1.0 - localUv.x);
+      }
+
+      vec3 orientedDockTileUv(vec2 uv) {
+        float quarterTurns = floor(dockTileHash(floor(uv)) * 4.0);
+        return vec3(rotateDockTileUv(uv, quarterTurns), quarterTurns);
+      }
+
+      vec2 rotateDockTileNormal(vec2 normalXY, float quarterTurns) {
+        if (quarterTurns < 0.5) return normalXY;
+        if (quarterTurns < 1.5) return vec2(normalXY.y, -normalXY.x);
+        if (quarterTurns < 2.5) return -normalXY;
+        return vec2(-normalXY.y, normalXY.x);
+      }`
+    );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+
+          vec3 dockMapUv = orientedDockTileUv(vMapUv);
+          vec4 sampledDiffuseColor = texture2D(map, dockMapUv.xy);
+
+          #ifdef DECODE_VIDEO_TEXTURE
+            sampledDiffuseColor = sRGBTransferEOTF(sampledDiffuseColor);
+          #endif
+
+          float dockConcreteGray = dot(
+            sampledDiffuseColor.rgb,
+            vec3(0.299, 0.587, 0.114)
+          );
+          sampledDiffuseColor.rgb = mix(
+            sampledDiffuseColor.rgb,
+            vec3(dockConcreteGray),
+            ${DOCK_TEXTURE_DESATURATION.toFixed(2)}
+          );
+          sampledDiffuseColor.rgb *= vec3(0.94, 0.97, 1.0);
+          diffuseColor *= sampledDiffuseColor;
+
+        #endif`
+      )
+      .replace(
+        '#include <roughnessmap_fragment>',
+        `float roughnessFactor = roughness;
+
+        #ifdef USE_ROUGHNESSMAP
+
+          vec3 dockRoughnessUv = orientedDockTileUv(vRoughnessMapUv);
+          vec4 texelRoughness = texture2D(roughnessMap, dockRoughnessUv.xy);
+          roughnessFactor *= texelRoughness.g;
+
+        #endif`
+      )
+      .replace(
+        '#include <normal_fragment_maps>',
+        `#ifdef USE_NORMALMAP_OBJECTSPACE
+
+          normal = texture2D(normalMap, vNormalMapUv).xyz * 2.0 - 1.0;
+
+          #ifdef FLIP_SIDED
+            normal = -normal;
+          #endif
+
+          #ifdef DOUBLE_SIDED
+            normal = normal * faceDirection;
+          #endif
+
+          normal = normalize(normalMatrix * normal);
+
+        #elif defined(USE_NORMALMAP_TANGENTSPACE)
+
+          vec3 dockNormalUv = orientedDockTileUv(vNormalMapUv);
+          vec3 mapN = texture2D(normalMap, dockNormalUv.xy).xyz * 2.0 - 1.0;
+
+          #if defined(USE_PACKED_NORMALMAP)
+            mapN = vec3(
+              mapN.xy,
+              sqrt(saturate(1.0 - dot(mapN.xy, mapN.xy)))
+            );
+          #endif
+
+          mapN.xy = rotateDockTileNormal(mapN.xy, dockNormalUv.z);
+          mapN.xy *= normalScale;
+          normal = normalize(tbn * mapN);
+
+        #elif defined(USE_BUMPMAP)
+
+          normal = perturbNormalArb(
+            -vViewPosition,
+            normal,
+            dHdxy_fwd(),
+            faceDirection
+          );
+
+        #endif`
+      );
+  };
+
+  material.customProgramCacheKey = () => 'dock-tile-orientation-v2';
+}
+
 export class Dock {
   constructor() {
     this.root = new THREE.Group();
     this.root.name = 'Dock';
 
-    this.createPlatform();
+    const platformLoading = this.createPlatform();
     this.createRoad();
     this.createRoadMarkings();
     this.createDepot();
     this.loading = Promise.all([
+      platformLoading,
       this.createStreetLamps(),
       this.createIndustrialBuildings(),
       this.createForklift(),
@@ -404,13 +534,57 @@ export class Dock {
   }
 
   createPlatform() {
+    const concreteMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0,
+      roughness: 0.95
+    });
+    addDockTextureOrientationVariation(concreteMaterial);
+    const sideMaterial = new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      metalness: 0,
+      roughness: 0.95
+    });
+
     this.platform = new THREE.Mesh(
-      new THREE.BoxGeometry(1200, 5, 600),
-      new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
+      new THREE.BoxGeometry(DOCK_WIDTH, 5, DOCK_LENGTH),
+      [
+        sideMaterial,
+        sideMaterial,
+        concreteMaterial,
+        sideMaterial,
+        sideMaterial,
+        sideMaterial
+      ]
     );
     this.platform.name = 'DockPlatform';
     this.platform.position.set(0, -0.5, 305);
     this.root.add(this.platform);
+
+    const loader = new THREE.TextureLoader();
+
+    return Promise.all([
+      loader.loadAsync(DOCK_CONCRETE_DIFFUSE_URL),
+      loader.loadAsync(DOCK_CONCRETE_NORMAL_URL),
+      loader.loadAsync(DOCK_CONCRETE_ROUGHNESS_URL)
+    ]).then(([diffuse, normal, roughness]) => {
+      [diffuse, normal, roughness].forEach((texture) => {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(
+          DOCK_WIDTH / DOCK_TEXTURE_SIZE,
+          DOCK_LENGTH / DOCK_TEXTURE_SIZE
+        );
+        texture.anisotropy = 8;
+      });
+
+      diffuse.colorSpace = THREE.SRGBColorSpace;
+      concreteMaterial.map = diffuse;
+      concreteMaterial.normalMap = normal;
+      concreteMaterial.normalScale.set(0.55, 0.55);
+      concreteMaterial.roughnessMap = roughness;
+      concreteMaterial.needsUpdate = true;
+    });
   }
 
   createQuarterTurn(innerRadius, outerRadius) {
