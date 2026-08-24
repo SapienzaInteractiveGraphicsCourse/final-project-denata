@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CargoSlots } from './CargoSlots.js';
 import { CONTAINER_SIZE } from './ContainerManager.js';
 import { enableShadows } from './Lighting.js';
+import { GroundDecals, applyPlanarXzUvs, loadAsphaltMap } from './GroundDecals.js';
 
 const DEPOT_ORIGIN = { x: -10, y: 2, z: 42 };
 const DEPOT_COL_SPACING = 3.2;
@@ -266,9 +267,9 @@ const PORT_ARCS = [
 const CLEAR_ROADS = [
   ...PORT_ROADS,
   [-90, 20, -8, 20],
-  [-32, 28, -32, 145],
+  [-32, 20, -32, 145],
   [0, 28, 0, 56],
-  [-24, 64, -8, 64],
+  [-32, 64, -8, 64],
   [-102, 20, -110, 28],
   [-110, 40, -102, 48],
   [-80, 116, -72, 124],
@@ -531,9 +532,13 @@ export class Dock {
     const platformLoading = this.createPlatform();
     this.createRoad();
     this.createRoadMarkings();
+    this.groundDecals = new GroundDecals();
+    this.root.add(this.groundDecals.root);
     this.createDepot();
     this.loading = Promise.all([
       platformLoading,
+      this.loadRoadAsphalt(),
+      this.groundDecals.loading,
       this.createStreetLamps(),
       this.createIndustrialBuildings(),
       this.createForklift(),
@@ -546,6 +551,7 @@ export class Dock {
     enableShadows(this.platform, false);
     enableShadows(this.road, false);
     enableShadows(this.roadMarkings, false);
+    enableShadows(this.groundDecals.root, false);
   }
 
   createPlatform() {
@@ -632,11 +638,20 @@ export class Dock {
     this.road.add(mesh);
   }
 
+  async loadRoadAsphalt() {
+    const map = await loadAsphaltMap();
+    this.roadMaterial.map = map;
+    this.roadMaterial.color.set(0xffffff);
+    this.roadMaterial.needsUpdate = true;
+  }
+
   createRoad() {
-    const roadMaterial = new THREE.MeshStandardMaterial({
+    this.roadMaterial = new THREE.MeshStandardMaterial({
       color: 0x30343b,
-      roughness: 0.9
+      roughness: 0.92,
+      metalness: 0
     });
+    const roadMaterial = this.roadMaterial;
 
     this.road = new THREE.Group();
     this.road.name = 'Road';
@@ -648,18 +663,11 @@ export class Dock {
     horizontalRoad.position.set(-65, 2.03, 20);
     this.road.add(horizontalRoad);
 
-    const curvedRoad = new THREE.Mesh(
-      this.createQuarterTurn(5, 11),
-      roadMaterial
-    );
-    curvedRoad.position.set(-40, 2, 28);
-    this.road.add(curvedRoad);
-
     const verticalRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(6, 0.06, 117),
+      new THREE.BoxGeometry(6, 0.06, 125),
       roadMaterial
     );
-    verticalRoad.position.set(-32, 2.03, 86.5);
+    verticalRoad.position.set(-32, 2.03, 82.5);
     this.road.add(verticalRoad);
 
     const topRoad = new THREE.Mesh(
@@ -692,19 +700,11 @@ export class Dock {
     this.road.add(bottomRightTurn);
 
     const bottomRoad = new THREE.Mesh(
-      new THREE.BoxGeometry(16, 0.06, 6),
+      new THREE.BoxGeometry(24, 0.06, 6),
       roadMaterial
     );
-    bottomRoad.position.set(-16, 2.03, 64);
+    bottomRoad.position.set(-20, 2.03, 64);
     this.road.add(bottomRoad);
-
-    const bottomLeftTurn = new THREE.Mesh(
-      this.createQuarterTurn(5, 11),
-      roadMaterial
-    );
-    bottomLeftTurn.position.set(-24, 2, 72);
-    bottomLeftTurn.rotation.y = Math.PI / 2;
-    this.road.add(bottomLeftTurn);
 
     PORT_ROADS.forEach(([x1, z1, x2, z2]) => {
       addRoadRun(this.road, roadMaterial, x1, z1, x2, z2);
@@ -715,133 +715,12 @@ export class Dock {
     });
 
     this.root.add(this.road);
+    applyPlanarXzUvs(this.road);
   }
 
   createRoadMarkings() {
     this.roadMarkings = new THREE.Group();
     this.roadMarkings.name = 'RoadMarkings';
-
-    const markingGeometry = new THREE.BoxGeometry(3, 0.02, 0.12);
-    const markingMaterial = new THREE.MeshStandardMaterial({ color: 0xf2d35f });
-
-    for (let x = -84; x <= -44; x += 8) {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(x, 2.07, 20);
-      this.roadMarkings.add(marking);
-    }
-
-    for (let z = 34; z <= 142; z += 8) {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(-32, 2.07, z);
-      marking.rotation.y = -Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    for (let index = 0; index <= 2; index += 1) {
-      const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(
-        -40 + Math.cos(angle) * 8,
-        2.07,
-        28 + Math.sin(angle) * 8
-      );
-      marking.rotation.y = -angle - Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    for (let x = -36; x <= -12; x += 8) {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(x, 2.07, 20);
-      this.roadMarkings.add(marking);
-    }
-
-    for (let index = 0; index <= 2; index += 1) {
-      const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(
-        -8 + Math.cos(angle) * 8,
-        2.07,
-        28 + Math.sin(angle) * 8
-      );
-      marking.rotation.y = -angle - Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    for (let z = 30; z <= 54; z += 8) {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(0, 2.07, z);
-      marking.rotation.y = -Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    for (let index = 0; index <= 2; index += 1) {
-      const angle = (index / 2) * (Math.PI / 2);
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(
-        -8 + Math.cos(angle) * 8,
-        2.07,
-        56 + Math.sin(angle) * 8
-      );
-      marking.rotation.y = -angle - Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    for (let x = -20; x <= -12; x += 8) {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(x, 2.07, 64);
-      this.roadMarkings.add(marking);
-    }
-
-    for (let index = 0; index <= 2; index += 1) {
-      const angle = -Math.PI / 2 - (index / 2) * (Math.PI / 2);
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(
-        -24 + Math.cos(angle) * 8,
-        2.07,
-        72 + Math.sin(angle) * 8
-      );
-      marking.rotation.y = -angle + Math.PI / 2;
-      this.roadMarkings.add(marking);
-    }
-
-    const addDash = (x, z, rotationY = 0) => {
-      const marking = new THREE.Mesh(markingGeometry, markingMaterial);
-      marking.position.set(x, 2.07, z);
-      marking.rotation.y = rotationY;
-      this.roadMarkings.add(marking);
-    };
-
-    PORT_ROADS.forEach(([x1, z1, x2, z2]) => {
-      const dx = x2 - x1;
-      const dz = z2 - z1;
-      const length = Math.hypot(dx, dz);
-      const rotationY = Math.atan2(-dz, dx);
-
-      for (let t = 6; t <= length - 4; t += 8) {
-        addDash(
-          x1 + (dx / length) * t,
-          z1 + (dz / length) * t,
-          rotationY
-        );
-      }
-    });
-
-    PORT_ARCS.forEach(({ x, z, rotationY }) => {
-      const cos = Math.cos(rotationY);
-      const sin = Math.sin(rotationY);
-
-      for (let index = 0; index <= 2; index += 1) {
-        const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
-        const localX = Math.cos(angle) * ROAD_ARC;
-        const localZ = Math.sin(angle) * ROAD_ARC;
-        addDash(
-          x + localX * cos + localZ * sin,
-          z - localX * sin + localZ * cos,
-          -angle - Math.PI / 2 + rotationY
-        );
-      }
-    });
-
     this.root.add(this.roadMarkings);
   }
 

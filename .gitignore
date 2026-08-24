@@ -6,6 +6,8 @@ dist/
 
 # Unused legacy asset
 public/assets/models/shipping_containers.glb
+assets/textures/ground/dash_centerline.png
+assets/textures/ground/decal_tire.png
 
 # Tool caches
 .vite/

@@ -622,3 +622,25 @@ function animate(time) {
 }
 
 initializeGame();
+
+window.__harbor = { camera, scene, controls, cameraViews, renderer, dock };
+window.__harborPose = function (x, y, z, tx, ty, tz, opts = {}) {
+  const fog = opts.fog !== false;
+  const bounds = scene.getObjectByName('MapBounds');
+  if (bounds) {
+    bounds.visible = fog;
+  }
+  cameraViews.update = function () {};
+  controls.enabled = false;
+  camera.up.set(opts.upX ?? 0, opts.upY ?? 1, opts.upZ ?? 0);
+  camera.fov = opts.fov ?? 70;
+  camera.near = 0.1;
+  camera.far = 2500;
+  camera.position.set(x, y, z);
+  camera.lookAt(tx, ty, tz);
+  camera.updateProjectionMatrix();
+  controls.target.set(tx, ty, tz);
+  renderer.render(scene, camera);
+  return true;
+};
+

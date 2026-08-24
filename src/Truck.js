@@ -79,20 +79,12 @@ export class Truck {
     this.departurePath.add(
       new THREE.LineCurve3(
         new THREE.Vector3(-8, roadHeight, 64),
-        new THREE.Vector3(-24, roadHeight, 64)
-      )
-    );
-    this.departurePath.add(
-      new THREE.CubicBezierCurve3(
-        new THREE.Vector3(-24, roadHeight, 64),
-        new THREE.Vector3(-24 - turnOffset, roadHeight, 64),
-        new THREE.Vector3(-32, roadHeight, 72 - turnOffset),
-        new THREE.Vector3(-32, roadHeight, 72)
+        new THREE.Vector3(-32, roadHeight, 64)
       )
     );
     this.departurePath.add(
       new THREE.LineCurve3(
-        new THREE.Vector3(-32, roadHeight, 72),
+        new THREE.Vector3(-32, roadHeight, 64),
         new THREE.Vector3(-32, roadHeight, 150)
       )
     );
