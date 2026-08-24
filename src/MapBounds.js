@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export const MAP_CENTER = new THREE.Vector3(2.5, 2, 42);
-export const MAP_RADIUS = 96;
+export const MAP_RADIUS = 72;
 export const FOG_NOON_COLOR = 0xc5d4e0;
 export const FOG_SUNRISE_COLOR = 0x8e96a0;
 export const FOG_NIGHT_COLOR = 0x2a3a52;
@@ -152,30 +152,8 @@ export class MapBounds {
     this.root.position.set(MAP_CENTER.x, 0, MAP_CENTER.z);
     this.fogMaterials = [];
 
-    this.createRing();
     this.createFogWall();
     this.setFogColor(FOG_NOON_COLOR);
-  }
-
-  createRing() {
-    const points = [];
-
-    for (let index = 0; index <= FOG_SEGMENTS; index += 1) {
-      const angle = (index / FOG_SEGMENTS) * Math.PI * 2;
-      const radius = radiusAt(angle);
-      points.push(new THREE.Vector3(
-        Math.cos(angle) * radius,
-        RING_Y,
-        Math.sin(angle) * radius
-      ));
-    }
-
-    const line = new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({ color: 0xff3333 })
-    );
-    line.name = 'MapBoundRing';
-    this.root.add(line);
   }
 
   createFogWall() {
