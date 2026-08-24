@@ -35,3 +35,8 @@ pnpm-debug.log*
 Thumbs.db
 
 local/
+
+# Local capture / screenshot helpers (not part of the game)
+capture.mjs
+**/capture.mjs
+harbor-layout-shots/

@@ -16,6 +16,9 @@ const LAMP_GROUND_Y = 2;
 const ROAD_Y = 2.03;
 const ROAD_THICKNESS = 0.06;
 const ROAD_WIDTH = 6;
+const ROAD_ARC = 8;
+const ROAD_ARC_INNER = 5;
+const ROAD_ARC_OUTER = 11;
 const DOCK_WIDTH = 1200;
 const DOCK_LENGTH = 600;
 const DOCK_TEXTURE_SIZE = 6;
@@ -234,22 +237,30 @@ const INDUSTRIAL_RADIOTOWER_C = {
 };
 
 // Extra port roads. Truck loop stays as-is in createRoad.
+// Straights stop at quarter-turn tangents so L-corners fill like the truck loop.
 const PORT_ROADS = [
-  [-110, 20, -90, 20],
-  [-104, 20, -80, 60],
-  [-80, 20, -80, 110],
+  [-102, 20, -90, 20],
+  [-110, 28, -110, 40],
+  [-102, 48, -80, 48],
+  [-80, 20, -80, 116],
   [-56, 20, -56, 88],
   [-80, 88, -32, 88],
-  [-80, 110, -32, 144],
+  [-72, 124, -32, 124],
   [28, 20, 80, 20],
-  [40, 20, 40, 108],
+  [40, 20, 40, 150],
   [64, 20, 64, 76],
-  [40, 76, 64, 76],
-  [88, 28, 88, 72],
-  [88, 72, 112, 108],
-  [-32, 102, 40, 126],
-  [40, 108, 40, 126],
-  [40, 126, 62, 150]
+  [40, 64, 88, 64],
+  [40, 76, 80, 76],
+  [88, 28, 88, 68],
+  [-32, 108, 40, 108]
+];
+
+const PORT_ARCS = [
+  { x: -102, z: 28, rotationY: Math.PI / 2 },
+  { x: -102, z: 40, rotationY: Math.PI },
+  { x: -72, z: 116, rotationY: Math.PI },
+  { x: 80, z: 28, rotationY: 0 },
+  { x: 80, z: 68, rotationY: -Math.PI / 2 }
 ];
 
 const CLEAR_ROADS = [
@@ -258,7 +269,11 @@ const CLEAR_ROADS = [
   [-32, 28, -32, 145],
   [0, 28, 0, 56],
   [-24, 64, -8, 64],
-  [80, 20, 88, 28]
+  [-102, 20, -110, 28],
+  [-110, 40, -102, 48],
+  [-80, 116, -72, 124],
+  [80, 20, 88, 28],
+  [80, 76, 88, 68]
 ];
 
 const ROAD_CLEAR = ROAD_WIDTH / 2 + CONTAINER_SIZE.z / 2 + 0.4;
@@ -597,7 +612,7 @@ export class Dock {
     shape.closePath();
 
     const geometry = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.06,
+      depth: ROAD_THICKNESS,
       bevelEnabled: false,
       curveSegments: 24
     });
@@ -605,6 +620,16 @@ export class Dock {
     geometry.rotateX(-Math.PI / 2);
 
     return geometry;
+  }
+
+  addQuarterTurn(material, x, z, rotationY = 0) {
+    const mesh = new THREE.Mesh(
+      this.createQuarterTurn(ROAD_ARC_INNER, ROAD_ARC_OUTER),
+      material
+    );
+    mesh.position.set(x, 2, z);
+    mesh.rotation.y = rotationY;
+    this.road.add(mesh);
   }
 
   createRoad() {
@@ -685,12 +710,9 @@ export class Dock {
       addRoadRun(this.road, roadMaterial, x1, z1, x2, z2);
     });
 
-    const eastTurn = new THREE.Mesh(
-      this.createQuarterTurn(5, 11),
-      roadMaterial
-    );
-    eastTurn.position.set(80, 2, 28);
-    this.road.add(eastTurn);
+    PORT_ARCS.forEach(({ x, z, rotationY }) => {
+      this.addQuarterTurn(roadMaterial, x, z, rotationY);
+    });
 
     this.root.add(this.road);
   }
@@ -804,14 +826,21 @@ export class Dock {
       }
     });
 
-    for (let index = 0; index <= 2; index += 1) {
-      const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
-      addDash(
-        80 + Math.cos(angle) * 8,
-        28 + Math.sin(angle) * 8,
-        -angle - Math.PI / 2
-      );
-    }
+    PORT_ARCS.forEach(({ x, z, rotationY }) => {
+      const cos = Math.cos(rotationY);
+      const sin = Math.sin(rotationY);
+
+      for (let index = 0; index <= 2; index += 1) {
+        const angle = -Math.PI / 2 + (index / 2) * (Math.PI / 2);
+        const localX = Math.cos(angle) * ROAD_ARC;
+        const localZ = Math.sin(angle) * ROAD_ARC;
+        addDash(
+          x + localX * cos + localZ * sin,
+          z - localX * sin + localZ * cos,
+          -angle - Math.PI / 2 + rotationY
+        );
+      }
+    });
 
     this.root.add(this.roadMarkings);
   }
