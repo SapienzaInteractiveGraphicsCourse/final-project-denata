@@ -39,6 +39,12 @@ const FORKLIFT = {
   length: 3.5,
   rotationY: Math.PI / 4
 };
+const DEPOT_FORKLIFT = {
+  position: new THREE.Vector3(56, 2, 70.5),
+  width: 1.7,
+  length: 3.5,
+  rotationY: - Math.PI / 2
+};
 const FUEL_TRUCK_URL = '/assets/models/fuel_truck.glb';
 const FUEL_TRUCK = {
   position: new THREE.Vector3(36, 2, 19),
@@ -46,6 +52,177 @@ const FUEL_TRUCK = {
   length: 13,
   rotationY: Math.PI / 2
 };
+const DOCKS_BOLLARD_URL = '/assets/models/docks_bollard.glb';
+const SHIP_BOLLARD_HEIGHT = 0.85;
+const SHIP_BOLLARDS = [
+  // Main cargo ship 
+  { position: new THREE.Vector3(-10, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(10, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(30, 2, 7), rotationY: 0 },
+  // Decorative ship on the west 
+  { position: new THREE.Vector3(-110, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(-80, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(-50, 2, 7), rotationY: 0 },
+  // Decorative ship on the east 
+  { position: new THREE.Vector3(75, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(105, 2, 7), rotationY: 0 },
+  { position: new THREE.Vector3(135, 2, 7), rotationY: 0 }
+];
+const DECORATIVE_WORKERS_URL = '/assets/models/workers.glb';
+const DECORATIVE_WORKER_HEIGHT = 1.75;
+const DECORATIVE_WORKERS = [
+  // Toolbox worker — north wall of the warehouse
+  {
+    name: 'Group1',
+    position: new THREE.Vector3(-20, 2, 34.5),
+    rotationY: - Math.PI / 2
+  },
+  // Standing worker — in front of the ship bollard
+  {
+    name: 'Group2',
+    position: new THREE.Vector3(9.5, 2, 7),
+    rotationY: Math.PI / 2
+  },
+  // Standing worker — in front of the ship bollard (west)
+  {
+    name: 'Group2',
+    position: new THREE.Vector3(-50.5, 2, 7),
+    rotationY: Math.PI / 2
+  },
+  // Walking worker — in front of the cargo ship
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(0, 2, 12),
+    rotationY: Math.PI / 2
+  },
+  // Walking worker — in front of the cargo ship
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(-14, 2, 13),
+    rotationY: -Math.PI / 2
+  },
+  // Walking worker — beside the office trailer
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(-37, 2, 15),
+    rotationY: Math.PI / 2
+  },
+  // Construction worker — portal crane pad
+  {
+    name: 'Group6',
+    position: new THREE.Vector3(-51, 2, 28),
+    rotationY: Math.PI / 2
+  },
+  // Drilling worker — portal crane pad
+  {
+    name: 'Group11',
+    position: new THREE.Vector3(-49, 2, 27),
+    rotationY: - Math.PI / 4
+  },
+  // Standing worker — portal crane pad
+  {
+    name: 'Group25',
+    position: new THREE.Vector3(-49, 2, 29),
+    rotationY:  - Math.PI + Math.PI / 4
+  },
+  // Walking worker — portal crane pad
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(-41, 2, 37),
+    rotationY: Math.PI / 2
+  },
+  // Standing worker — yard between the water tower and warehouse
+  {
+    name: 'Group10',
+    position: new THREE.Vector3(-27, 2, 33),
+    rotationY: -Math.PI / 2
+  },
+  // Walking worker — central yard
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(-10, 2, 59),
+    rotationY: Math.PI / 2
+  },
+  // Toolbox worker — corner of the office trailer
+  {
+    name: 'Group1',
+    position: new THREE.Vector3(-27, 2, 15),
+    rotationY: 0
+  },
+  // Walking worker — west container yard Y2
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(-68, 2, 26),
+    rotationY: Math.PI / 2
+  },
+  // Toolbox worker — railroad loadbay shed
+  {
+    name: 'Group1',
+    position: new THREE.Vector3(22, 2, 59),
+    rotationY: Math.PI
+  },
+  // Walking worker — railroad loadbay shed
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(26, 2, 59),
+    rotationY: 0
+  },
+  // Toolbox worker — on top of the storage tank
+  {
+    name: 'Group1',
+    position: new THREE.Vector3(30, 8.1, 29),
+    rotationY: Math.PI,
+  },
+  // Pole worker — on the storage tank
+  {
+    name: 'Group22',
+    position: new THREE.Vector3(26, 2, 40.4),
+    rotationY: Math.PI / 4,
+    height: 6
+  },
+  // Seated worker — on the forklift
+  {
+    name: 'Group17',
+    position: new THREE.Vector3(14.8, 2.65, 59.7),
+    rotationY: Math.PI / 4
+  },
+  // Seated worker — depot forklift
+  {
+    name: 'Group17',
+    position: new THREE.Vector3(56.5, 2.65, 70.5),
+    rotationY: - Math.PI / 2
+  },
+  // Drilling worker — forklift area 
+  {
+    name: 'Group11',
+    position: new THREE.Vector3(12, 2, 70),
+    rotationY: Math.PI / 4
+  },
+  // Walking worker — forklift area 
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(11, 2, 63),
+    rotationY: Math.PI 
+  },
+  // Standing worker — north container yard Y1
+  {
+    name: 'Group25',
+    position: new THREE.Vector3(-74, 2, 28),
+    rotationY: Math.PI / 2
+  },
+  // Walking worker — east container yard Y3
+  {
+    name: 'Group14',
+    position: new THREE.Vector3(55, 2, 58),
+    rotationY: -Math.PI / 2
+  },
+  // Toolbox worker — south of the fuel truck, off the road
+  {
+    name: 'Group1',
+    position: new THREE.Vector3(41, 2, 16),
+    rotationY: 0
+  }
+];
 const DAMAGED_FENCE_URL = '/assets/models/damaged_chainlink_fence.glb';
 const FENCE_SECTION_LENGTH = 3.5;
 const FENCE_SECTION_HEIGHT = 2.8;
@@ -85,10 +262,14 @@ const BARREL_DIAMETER = 0.6;
 const PLASTIC_WATER_CONTAINER_URL =
   '/assets/models/plastic_water_container_-_4mb.glb';
 const PLASTIC_WATER_CONTAINER_HEIGHT = 1.25;
+const PLASTIC_WATER_CONTAINER_ROTATIONS = [-0.2, 0.35, -0.45];
 const PLASTIC_WATER_CONTAINER_POSITIONS = [
   new THREE.Vector3(14, 2, 68.5),
   new THREE.Vector3(17, 2, 71),
-  new THREE.Vector3(13.5, 2, 72.5)
+  new THREE.Vector3(13.5, 2, 72.5),
+  new THREE.Vector3(48, 2, 71.5),
+  new THREE.Vector3(52, 2, 70.5),
+  new THREE.Vector3(49.6, 2, 69)
 ];
 const INDUSTRIAL_BUILDING = {
   name: 'Industrial_Building_10',
@@ -232,6 +413,48 @@ const INDUSTRIAL_RADIOTOWER_B = {
 const INDUSTRIAL_RADIOTOWER_C = {
   name: 'Industrial_Radiotower_1',
   position: new THREE.Vector3(-70, 2, 10),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_WAREHOUSE_3 = {
+  name: 'Industrial_Warehouse_3',
+  position: new THREE.Vector3(85, 2, 92),
+  width: 16,
+  length: 22,
+  rotationY: Math.PI
+};
+const INDUSTRIAL_FACTORY_PLANT_2 = {
+  name: 'Industrial_FactoryPlant_2',
+  position: new THREE.Vector3(60, 2, 92),
+  width: 18,
+  length: 26,
+  rotationY: -Math.PI / 2
+};
+const INDUSTRIAL_BUILDING_1_1 = {
+  name: 'Industrial_Building_1',
+  position: new THREE.Vector3(105, 2, 33),
+  width: 18,
+  length: 26,
+  rotationY: 0
+};
+const INDUSTRIAL_BUILDING_1_2 = {
+  name: 'Industrial_Building_1',
+  position: new THREE.Vector3(105, 2, 63),
+  width: 18,
+  length: 26,
+  rotationY: 0
+};
+const INDUSTRIAL_SILO_TANK_1_1 = {
+  name: 'Industrial_SiloTank_1',
+  position: new THREE.Vector3(75, 2, 70),
+  width: 3,
+  length: 3,
+  rotationY: 0
+};
+const INDUSTRIAL_SILO_TANK_1_2 = {
+  name: 'Industrial_SiloTank_1',
+  position: new THREE.Vector3(80, 2, 70),
   width: 3,
   length: 3,
   rotationY: 0
@@ -545,7 +768,9 @@ export class Dock {
       this.createFuelTruck(),
       this.createFences(),
       this.createOilBarrels(),
-      this.createPlasticWaterContainers()
+      this.createPlasticWaterContainers(),
+      this.createShipBollards(),
+      this.createDecorativeWorkers()
     ]);
 
     enableShadows(this.platform, false);
@@ -869,6 +1094,31 @@ export class Dock {
       gltf.scene,
       INDUSTRIAL_RADIOTOWER_C
     );
+    this.industrialWarehouse3 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_WAREHOUSE_3
+    );
+    this.industrialFactoryPlant2 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_FACTORY_PLANT_2
+    );
+    this.industrialBuilding1_1 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_BUILDING_1_1
+    );
+    this.industrialBuilding1_2 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_BUILDING_1_2
+    );
+    this.industrialSiloTank1_1 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_SILO_TANK_1_1
+    );
+    this.industrialSiloTank1_2 = this.createIndustrialAsset(
+      gltf.scene,
+      INDUSTRIAL_SILO_TANK_1_2
+    );
+
   }
 
   async createForklift() {
@@ -876,6 +1126,7 @@ export class Dock {
     const gltf = await loader.loadAsync(FORKLIFT_URL);
 
     this.forklift = this.createAsset(gltf.scene, FORKLIFT, 'Forklift');
+    this.depotForklift = this.createAsset(gltf.scene, DEPOT_FORKLIFT, 'DepotForklift');
   }
 
   async createFuelTruck() {
@@ -883,6 +1134,58 @@ export class Dock {
     const gltf = await loader.loadAsync(FUEL_TRUCK_URL);
 
     this.fuelTruck = this.createAsset(gltf.scene, FUEL_TRUCK, 'FuelTruck');
+  }
+
+  async createShipBollards() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(DOCKS_BOLLARD_URL);
+    const template = gltf.scene.children[0].children[0];
+
+    this.shipBollards = new THREE.Group();
+    this.shipBollards.name = 'ShipBollards';
+    this.root.add(this.shipBollards);
+
+    SHIP_BOLLARDS.forEach((config, index) => {
+      const model = template.clone(true);
+      model.rotation.x = Math.PI;
+      model.rotation.y = Math.PI / 2;
+
+      this.createAsset(
+        model,
+        {
+          position: config.position,
+          rotationY: config.rotationY,
+          height: SHIP_BOLLARD_HEIGHT
+        },
+        `ShipBollard-${index + 1}`,
+        this.shipBollards
+      );
+    });
+  }
+
+  async createDecorativeWorkers() {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(DECORATIVE_WORKERS_URL);
+    const pack = gltf.scene.getObjectByName('Model') || gltf.scene;
+
+    this.decorativeWorkers = new THREE.Group();
+    this.decorativeWorkers.name = 'DecorativeWorkers';
+    this.root.add(this.decorativeWorkers);
+
+    DECORATIVE_WORKERS.forEach((config, index) => {
+      const source = pack.getObjectByName(config.name);
+
+      this.createAsset(
+        source,
+        {
+          position: config.position,
+          rotationY: config.rotationY,
+          height: config.height ?? DECORATIVE_WORKER_HEIGHT
+        },
+        `DecorativeWorker-${index + 1}`,
+        this.decorativeWorkers
+      );
+    });
   }
 
   async createOilBarrels() {
@@ -1132,7 +1435,7 @@ export class Dock {
         instance.receiveShadow = true;
 
         const placementMatrix = new THREE.Matrix4().makeRotationY(
-          [-0.2, 0.35, -0.45][index]
+          PLASTIC_WATER_CONTAINER_ROTATIONS[index % PLASTIC_WATER_CONTAINER_ROTATIONS.length]
         );
         placementMatrix.setPosition(position);
         instance.setMatrixAt(
@@ -1365,7 +1668,7 @@ export class Dock {
     return this.createAsset(source, config, config.name);
   }
 
-  createAsset(source, config, name) {
+  createAsset(source, config, name, parent = this.root) {
     const model = source.clone(true);
     model.position.set(0, 0, 0);
 
@@ -1400,7 +1703,7 @@ export class Dock {
     asset.position.copy(config.position);
     asset.rotation.y = config.rotationY;
     asset.add(scaleRoot);
-    this.root.add(asset);
+    parent.add(asset);
 
     enableShadows(asset);
     return asset;
