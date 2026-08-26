@@ -42,6 +42,11 @@ The game can be played at the following link:
 * **Multi-purpose Vessel:** [Multi-purpose Vessel VII](https://sketchfab.com/3d-models/multi-purpose-vessel-vii-80aa5e7f2fab4abd9b3558a7411fdb98) — by gogiart
 * **Rescue Vessel:** [Rescue Vessel](https://sketchfab.com/3d-models/rescue-vessel-f9815142cafc425090f98d329212b451) — by gogiart
 
+## Environment
+
+* [Street Lamp](https://sketchfab.com/3d-models/street-lamp-d0f6ca0318c044d6a99ac5e376b8ceca) — by StratoArt
+* [Damaged Chainlink Fence](https://sketchfab.com/3d-models/damaged-chainlink-fence-2de20806f13e42179db627d263901ff4) — by Arsen Ismailov
+
 ## Textures
 
 * **Concrete Texture:** [Brushed Concrete 2](https://polyhaven.com/a/brushed_concrete_2) — Poly Haven
