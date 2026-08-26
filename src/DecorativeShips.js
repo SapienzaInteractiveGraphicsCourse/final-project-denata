@@ -11,22 +11,22 @@ const SHIP_CLEAR_TIME = 20000;
 const SHIP_TYPES = [
   {
     name: 'DecorativeShip1',
-    path: '/assets/models/ships/deco/deco_ship_1.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/deco/deco_ship_1.glb`,
     length: 90
   },
   {
     name: 'DecorativeShip2',
-    path: '/assets/models/ships/deco/deco_ship_2.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/deco/deco_ship_2.glb`,
     length: 100
   },
   {
     name: 'DecorativeShip3',
-    path: '/assets/models/ships/deco/deco_ship_3.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/deco/deco_ship_3.glb`,
     length: 50
   },
   {
     name: 'DecorativeShip4',
-    path: '/assets/models/ships/deco/deco_ship_4.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/deco/deco_ship_4.glb`,
     length: 220
   }
 ];

@@ -25,14 +25,15 @@ const DOCK_LENGTH = 600;
 const DOCK_TEXTURE_SIZE = 6;
 const DOCK_TEXTURE_DESATURATION = 0.65;
 const DOCK_CONCRETE_DIFFUSE_URL =
-  '/assets/textures/concrete/brushed_concrete_2_diff_2k.jpg';
+  `${import.meta.env.BASE_URL}assets/textures/concrete/brushed_concrete_2_diff_2k.jpg`;
 const DOCK_CONCRETE_NORMAL_URL =
-  '/assets/textures/concrete/brushed_concrete_2_nor_gl_2k.jpg';
+  `${import.meta.env.BASE_URL}assets/textures/concrete/brushed_concrete_2_nor_gl_2k.jpg`;
 const DOCK_CONCRETE_ROUGHNESS_URL =
-  '/assets/textures/concrete/brushed_concrete_2_rough_2k.jpg';
+  `${import.meta.env.BASE_URL}assets/textures/concrete/brushed_concrete_2_rough_2k.jpg`;
 const INDUSTRIAL_BUILDING_URL =
-  '/assets/models/industrial_buildings_set_-_low_poly_models.glb';
-const FORKLIFT_URL = '/assets/models/forklift_low_poly.glb';
+  `${import.meta.env.BASE_URL}assets/models/industrial_buildings_set_-_low_poly_models.glb`;
+const FORKLIFT_URL =
+  `${import.meta.env.BASE_URL}assets/models/forklift_low_poly.glb`;
 const FORKLIFT = {
   position: new THREE.Vector3(15, 2, 60),
   width: 1.7,
@@ -45,14 +46,16 @@ const DEPOT_FORKLIFT = {
   length: 3.5,
   rotationY: - Math.PI / 2
 };
-const FUEL_TRUCK_URL = '/assets/models/fuel_truck.glb';
+const FUEL_TRUCK_URL =
+  `${import.meta.env.BASE_URL}assets/models/fuel_truck.glb`;
 const FUEL_TRUCK = {
   position: new THREE.Vector3(36, 2, 19),
   width: 3,
   length: 13,
   rotationY: Math.PI / 2
 };
-const DOCKS_BOLLARD_URL = '/assets/models/docks_bollard.glb';
+const DOCKS_BOLLARD_URL =
+  `${import.meta.env.BASE_URL}assets/models/docks_bollard.glb`;
 const SHIP_BOLLARD_HEIGHT = 0.85;
 const SHIP_BOLLARDS = [
   // Main cargo ship 
@@ -68,7 +71,8 @@ const SHIP_BOLLARDS = [
   { position: new THREE.Vector3(105, 2, 7), rotationY: 0 },
   { position: new THREE.Vector3(135, 2, 7), rotationY: 0 }
 ];
-const DECORATIVE_WORKERS_URL = '/assets/models/workers.glb';
+const DECORATIVE_WORKERS_URL =
+  `${import.meta.env.BASE_URL}assets/models/workers.glb`;
 const DECORATIVE_WORKER_HEIGHT = 1.75;
 const DECORATIVE_WORKERS = [
   // Toolbox worker — north wall of the warehouse
@@ -223,7 +227,8 @@ const DECORATIVE_WORKERS = [
     rotationY: 0
   }
 ];
-const DAMAGED_FENCE_URL = '/assets/models/damaged_chainlink_fence.glb';
+const DAMAGED_FENCE_URL =
+  `${import.meta.env.BASE_URL}assets/models/damaged_chainlink_fence.glb`;
 const FENCE_SECTION_LENGTH = 3.5;
 const FENCE_SECTION_HEIGHT = 2.8;
 const FENCE_GAP = 0.1;
@@ -256,11 +261,12 @@ const FENCE_PATHS = [
     [-17, 58.5]
   ]
 ];
-const OIL_BARRELS_URL = '/assets/models/oil_barrel_opt.glb';
+const OIL_BARRELS_URL =
+  `${import.meta.env.BASE_URL}assets/models/oil_barrel_opt.glb`;
 const BARREL_HEIGHT = 0.9;
 const BARREL_DIAMETER = 0.6;
 const PLASTIC_WATER_CONTAINER_URL =
-  '/assets/models/plastic_water_container_-_4mb.glb';
+  `${import.meta.env.BASE_URL}assets/models/plastic_water_container_-_4mb.glb`;
 const PLASTIC_WATER_CONTAINER_HEIGHT = 1.25;
 const PLASTIC_WATER_CONTAINER_ROTATIONS = [-0.2, 0.35, -0.45];
 const PLASTIC_WATER_CONTAINER_POSITIONS = [
@@ -1720,7 +1726,9 @@ export class Dock {
     this.lampsOn = false;
 
     const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync('/assets/models/street_lamp.glb');
+    const gltf = await loader.loadAsync(
+      `${import.meta.env.BASE_URL}assets/models/street_lamp.glb`
+    );
     this.setupStreetLamps(gltf.scene);
   }
 

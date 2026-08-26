@@ -95,7 +95,9 @@ export class Truck {
   async loadModel() {
     const loader = new GLTFLoader();
 
-    const gltf = await loader.loadAsync('/assets/models/trucks.glb');
+    const gltf = await loader.loadAsync(
+      `${import.meta.env.BASE_URL}assets/models/trucks.glb`
+    );
     const model = gltf.scene;
     const initialBox = new THREE.Box3().setFromObject(model);
     const initialSize = initialBox.getSize(new THREE.Vector3());

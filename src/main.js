@@ -61,7 +61,7 @@ const waterNormalsLoader = new THREE.TextureLoader();
 let waterNormals;
 const waterNormalsLoading = new Promise((resolve, reject) => {
   waterNormals = waterNormalsLoader.load(
-    '/assets/textures/waternormals.jpg',
+    `${import.meta.env.BASE_URL}assets/textures/waternormals.jpg`,
     resolve,
     undefined,
     reject
@@ -643,4 +643,3 @@ window.__harborPose = function (x, y, z, tx, ty, tz, opts = {}) {
   renderer.render(scene, camera);
   return true;
 };
-

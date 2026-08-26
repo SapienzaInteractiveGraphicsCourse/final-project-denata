@@ -29,7 +29,7 @@ const SHIP_2_ROUTE = {
 const SHIP_TYPES = [
   {
     name: 'Ship1',
-    path: '/assets/models/ships/ship_1.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/ship_1.glb`,
     chance: 50,
     length: 57,
     route: SHIP_1_ROUTE,
@@ -37,7 +37,7 @@ const SHIP_TYPES = [
   },
   {
     name: 'Ship2',
-    path: '/assets/models/ships/ship_3.glb',
+    path: `${import.meta.env.BASE_URL}assets/models/ships/ship_3.glb`,
     chance: 50,
     length: 75,
     route: SHIP_2_ROUTE,

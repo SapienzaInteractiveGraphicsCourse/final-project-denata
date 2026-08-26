@@ -14,7 +14,7 @@ export const DECAL_Y = 2.08;
 export const DASH_Y = 2.075;
 export const ASPHALT_TILE_METERS = 2.5;
 
-const TEX = '/assets/textures/ground/';
+const TEX = `${import.meta.env.BASE_URL}assets/textures/ground/`;
 const ASPHALT_URL = TEX + 'asphalt_tile.png';
 const DASH_URL = TEX + 'dash_centerline_white.png';
 const STRIPE_URL = TEX + 'paint_stripe_white.png';

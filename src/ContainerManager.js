@@ -5,60 +5,64 @@ import { enableShadows } from './Lighting.js';
 export const CONTAINER_SIZE = new THREE.Vector3(2.54, 2.7, 6.11);
 
 const CONTAINER_TYPES = [
-  { id: 'classic', url: '/assets/models/20ft_container.glb', weight: 2 },
+  {
+    id: 'classic',
+    url: `${import.meta.env.BASE_URL}assets/models/20ft_container.glb`,
+    weight: 2
+  },
   {
     id: 'cargo-blue',
-    url: '/assets/models/containers/cargo_container_new.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/cargo_container_new.glb`,
     objectName: 'Object_6',
     weight: 1
   },
   {
     id: 'cargo-green',
-    url: '/assets/models/containers/cargo_container_new.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/cargo_container_new.glb`,
     objectName: 'Object_8',
     weight: 1
   },
   {
     id: 'cargo-red',
-    url: '/assets/models/containers/cargo_container_new.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/cargo_container_new.glb`,
     objectName: 'Object_10',
     weight: 1
   },
   {
     id: 'container',
-    url: '/assets/models/containers/container.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/container.glb`,
     weight: 1
   },
   {
     id: 'container-3d',
-    url: '/assets/models/containers/container_3d_model.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/container_3d_model.glb`,
     weight: 1
   },
   {
     id: 'sea-cargo',
-    url: '/assets/models/containers/sea_cargo_container_-_legendarygamedev.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/sea_cargo_container_-_legendarygamedev.glb`,
     weight: 2
   },
   {
     id: 'shipping',
-    url: '/assets/models/containers/shipping_container.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/shipping_container.glb`,
     weight: 2
   },
   {
     id: 'shipping-blue',
-    url: '/assets/models/containers/shipping_containers.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/shipping_containers.glb`,
     objectName: 'Cylinder023',
     weight: 1
   },
   {
     id: 'shipping-green',
-    url: '/assets/models/containers/shipping_containers.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/shipping_containers.glb`,
     objectName: 'Cylinder025',
     weight: 1
   },
   {
     id: 'shipping-red',
-    url: '/assets/models/containers/shipping_containers.glb',
+    url: `${import.meta.env.BASE_URL}assets/models/containers/shipping_containers.glb`,
     objectName: 'Cylinder028',
     weight: 1
   }

@@ -44,7 +44,9 @@ export class Worker {
 
   async loadModel() {
     const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync('/assets/models/Worker.glb');
+    const gltf = await loader.loadAsync(
+      `${import.meta.env.BASE_URL}assets/models/Worker.glb`
+    );
     const model = gltf.scene;
     const initialBox = new THREE.Box3().setFromObject(model);
     const initialSize = initialBox.getSize(new THREE.Vector3());
@@ -85,7 +87,9 @@ export class Worker {
 
   async loadFlashlight() {
     const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync('/assets/models/flashlight.glb');
+    const gltf = await loader.loadAsync(
+      `${import.meta.env.BASE_URL}assets/models/flashlight.glb`
+    );
     const model = gltf.scene;
     const initialBox = new THREE.Box3().setFromObject(model);
     const initialSize = initialBox.getSize(new THREE.Vector3());

@@ -30,7 +30,9 @@ export class Crane {
   async loadModel() {
     const loader = new GLTFLoader();
 
-    const gltf = await loader.loadAsync('/assets/models/Crane_Modified3.glb');
+    const gltf = await loader.loadAsync(
+      `${import.meta.env.BASE_URL}assets/models/Crane_Modified3.glb`
+    );
     const model = gltf.scene;
 
     model.scale.setScalar(0.5885823965072632);
