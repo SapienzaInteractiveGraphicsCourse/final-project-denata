@@ -11,9 +11,22 @@ const TAILLIGHT_LENS = new THREE.MeshBasicMaterial({
   color: 0xff3333,
   side: THREE.DoubleSide
 });
-const ROAD_HEIGHT = 2.06;
-const TURN = 8 * 0.5522847498;
+const HEADLIGHT_GEOMETRY = new THREE.PlaneGeometry(0.22, 0.07);
+const TAILLIGHT_GEOMETRY = new THREE.PlaneGeometry(0.16, 0.06);
 
+// Traffic tuning. The complete inbound-loop-outbound route takes roughly
+// 32 seconds; the seven-second spawn interval is intentionally kept separate.
+const ROAD_HEIGHT = 2.06;
+const TRAFFIC_SPEED = 14;
+const SPAWN_INTERVAL_MS = 8000;
+const LANE_OFFSET = 1.25;
+const MAIN_ROAD_END_Z = 200;
+const CURVE_HANDLE = 8 * 0.5522847498;
+const JUNCTION_RADIUS = 3;
+const JUNCTION_HANDLE = JUNCTION_RADIUS * 0.5522847498;
+
+// Only these two moving traffic models are used. The parked oil truck is not
+// part of this list, so it can never be selected by the random spawner.
 const MODELS = [
   {
     name: 'TrafficTruck',
@@ -29,87 +42,88 @@ const MODELS = [
   }
 ];
 
-function makeLine(x1, z1, x2, z2) {
-  const path = new THREE.CurvePath();
-  path.add(
-    new THREE.LineCurve3(
-      new THREE.Vector3(x1, ROAD_HEIGHT, z1),
-      new THREE.Vector3(x2, ROAD_HEIGHT, z2)
-    )
-  );
-  return path;
+function roadPoint(x, z) {
+  return new THREE.Vector3(x, ROAD_HEIGHT, z);
 }
 
-function makeEastHook() {
+// Trucks enter from the main road in the fog, use the eastern block to turn
+// around, then retrace the approach road in the opposite lane and disappear.
+function makeTrafficRoute() {
   const path = new THREE.CurvePath();
+
+  // Main-road approach and the right turn onto the shared connector.
   path.add(
     new THREE.LineCurve3(
-      new THREE.Vector3(40, ROAD_HEIGHT, 76),
-      new THREE.Vector3(80, ROAD_HEIGHT, 76)
+      roadPoint(40, MAIN_ROAD_END_Z),
+      roadPoint(40, 79)
     )
   );
   path.add(
     new THREE.CubicBezierCurve3(
-      new THREE.Vector3(80, ROAD_HEIGHT, 76),
-      new THREE.Vector3(80 + TURN, ROAD_HEIGHT, 76),
-      new THREE.Vector3(88, ROAD_HEIGHT, 68 + TURN),
-      new THREE.Vector3(88, ROAD_HEIGHT, 68)
+      roadPoint(40, 79),
+      roadPoint(40, 79 - JUNCTION_HANDLE),
+      roadPoint(43 - JUNCTION_HANDLE, 76),
+      roadPoint(43, 76)
     )
   );
-  path.add(
-    new THREE.LineCurve3(
-      new THREE.Vector3(88, ROAD_HEIGHT, 68),
-      new THREE.Vector3(88, ROAD_HEIGHT, 28)
-    )
-  );
-  return path;
-}
+  path.add(new THREE.LineCurve3(roadPoint(43, 76), roadPoint(61, 76)));
 
-function makeWestCurve() {
-  const path = new THREE.CurvePath();
+  // Turn north and make one clockwise lap around the eastern block.
   path.add(
     new THREE.CubicBezierCurve3(
-      new THREE.Vector3(-102, ROAD_HEIGHT, 20),
-      new THREE.Vector3(-102 - TURN, ROAD_HEIGHT, 20),
-      new THREE.Vector3(-110, ROAD_HEIGHT, 28 - TURN),
-      new THREE.Vector3(-110, ROAD_HEIGHT, 28)
+      roadPoint(61, 76),
+      roadPoint(61 + JUNCTION_HANDLE, 76),
+      roadPoint(64, 73 + JUNCTION_HANDLE),
+      roadPoint(64, 73)
     )
   );
-  path.add(
-    new THREE.LineCurve3(
-      new THREE.Vector3(-110, ROAD_HEIGHT, 28),
-      new THREE.Vector3(-110, ROAD_HEIGHT, 40)
-    )
-  );
+  path.add(new THREE.LineCurve3(roadPoint(64, 73), roadPoint(64, 23)));
   path.add(
     new THREE.CubicBezierCurve3(
-      new THREE.Vector3(-110, ROAD_HEIGHT, 40),
-      new THREE.Vector3(-110, ROAD_HEIGHT, 40 + TURN),
-      new THREE.Vector3(-102 - TURN, ROAD_HEIGHT, 48),
-      new THREE.Vector3(-102, ROAD_HEIGHT, 48)
+      roadPoint(64, 23),
+      roadPoint(64, 23 - JUNCTION_HANDLE),
+      roadPoint(67 - JUNCTION_HANDLE, 20),
+      roadPoint(67, 20)
+    )
+  );
+  path.add(new THREE.LineCurve3(roadPoint(67, 20), roadPoint(80, 20)));
+  path.add(
+    new THREE.CubicBezierCurve3(
+      roadPoint(80, 20),
+      roadPoint(80 + CURVE_HANDLE, 20),
+      roadPoint(88, 28 - CURVE_HANDLE),
+      roadPoint(88, 28)
+    )
+  );
+  path.add(new THREE.LineCurve3(roadPoint(88, 28), roadPoint(88, 68)));
+  path.add(
+    new THREE.CubicBezierCurve3(
+      roadPoint(88, 68),
+      roadPoint(88, 68 + CURVE_HANDLE),
+      roadPoint(80 + CURVE_HANDLE, 76),
+      roadPoint(80, 76)
+    )
+  );
+
+  // Return over the connector and main road, now in the opposite lane.
+  path.add(new THREE.LineCurve3(roadPoint(80, 76), roadPoint(43, 76)));
+  path.add(
+    new THREE.CubicBezierCurve3(
+      roadPoint(43, 76),
+      roadPoint(43 - JUNCTION_HANDLE, 76),
+      roadPoint(40, 79 - JUNCTION_HANDLE),
+      roadPoint(40, 79)
     )
   );
   path.add(
     new THREE.LineCurve3(
-      new THREE.Vector3(-102, ROAD_HEIGHT, 48),
-      new THREE.Vector3(-80, ROAD_HEIGHT, 48)
+      roadPoint(40, 79),
+      roadPoint(40, MAIN_ROAD_END_Z)
     )
   );
+
   return path;
 }
-
-// Extra port roads only. The player truck loop (z=20 west, x=0, z=64, x=-32) stays empty.
-const ROUTES = [
-  { model: 0, speed: 8, start: 0.1, reverse: false, path: makeLine(40, 32, 40, 108) },
-  { model: 1, speed: 7, start: 0.55, reverse: true, path: makeLine(64, 28, 64, 74) },
-  { model: 1, speed: 6.5, start: 0.2, reverse: false, path: makeEastHook() },
-  { model: 1, speed: 7.5, start: 0.4, reverse: true, path: makeLine(-68, 88, -40, 88) },
-  { model: 0, speed: 7, start: 0.35, reverse: false, path: makeLine(-80, 48, -80, 88) },
-  { model: 0, speed: 7, start: 0.35, reverse: false, path: makeLine(40, 64, 88, 64) },
-  { model: 1, speed: 6.5, start: 0.15, reverse: false, path: makeWestCurve() },
-  { model: 0, speed: 7, start: 0.2, reverse: false, path: makeLine(-56, 28, -56, 84) },
-  { model: 1, speed: 6.5, start: 0.25, reverse: false, path: makeLine(-28, 108, 36, 108) }
-];
 
 export class Traffic {
   constructor() {
@@ -117,6 +131,9 @@ export class Traffic {
     this.root.name = 'Traffic';
     this.templates = [];
     this.vehicles = [];
+    this.path = makeTrafficRoute();
+    this.nextSpawnAt = null;
+    this.nextVehicleId = 1;
     this.nightLightsOn = false;
     this.ready = false;
     this.loading = this.initialize();
@@ -129,10 +146,6 @@ export class Traffic {
       const gltf = await loader.loadAsync(modelData.path);
       this.templates.push(this.prepareModel(gltf.scene, modelData));
     }
-
-    ROUTES.forEach((route, index) => {
-      this.addVehicle(route, index);
-    });
 
     this.ready = true;
   }
@@ -162,13 +175,15 @@ export class Traffic {
     return holder;
   }
 
-  addVehicle(route, index) {
-    const modelData = MODELS[route.model];
-    const template = this.templates[route.model];
+  addVehicle(time) {
+    const modelIndex = Math.floor(Math.random() * MODELS.length);
+    const modelData = MODELS[modelIndex];
     const root = new THREE.Group();
-    const model = template.clone(true);
+    const model = this.templates[modelIndex].clone(true);
+    const id = this.nextVehicleId;
 
-    root.name = `${modelData.name}-${index + 1}`;
+    this.nextVehicleId += 1;
+    root.name = `${modelData.name}-${id}`;
     root.add(model);
     this.root.add(root);
 
@@ -185,11 +200,12 @@ export class Traffic {
 
     const vehicle = {
       root,
-      path: route.path,
-      speed: route.speed,
-      reverse: route.reverse,
-      motion: { progress: route.start },
+      path: this.path,
+      speed: TRAFFIC_SPEED,
+      motion: { progress: 0 },
       lastPosition: new THREE.Vector3(),
+      pathPoint: new THREE.Vector3(),
+      pathTangent: new THREE.Vector3(),
       wheels,
       wheelRadius,
       nightLights: [],
@@ -197,9 +213,10 @@ export class Traffic {
     };
 
     this.setupLights(vehicle);
-    this.placeVehicle(vehicle);
+    this.placeVehicle(vehicle, false);
     vehicle.lastPosition.copy(vehicle.root.position);
     this.vehicles.push(vehicle);
+    this.startDrive(vehicle, time);
   }
 
   setupLights(vehicle) {
@@ -209,18 +226,42 @@ export class Traffic {
     const headY = size.y * 0.24;
     const tailY = size.y * 0.3;
 
-    const addLens = (x, y, side, width, height, material) => {
-      const lens = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+    const addLens = (x, y, side, geometry, material) => {
+      const lens = new THREE.Mesh(geometry, material);
       lens.position.set(x, y, side);
       lens.rotation.y = Math.PI / 2;
       vehicle.root.add(lens);
       vehicle.nightLights.push(lens);
     };
 
-    addLens(box.max.x + 0.02, headY, z, 0.22, 0.07, HEADLIGHT_LENS);
-    addLens(box.max.x + 0.02, headY, -z, 0.22, 0.07, HEADLIGHT_LENS);
-    addLens(box.min.x - 0.02, tailY, z, 0.16, 0.06, TAILLIGHT_LENS);
-    addLens(box.min.x - 0.02, tailY, -z, 0.16, 0.06, TAILLIGHT_LENS);
+    addLens(
+      box.max.x + 0.02,
+      headY,
+      z,
+      HEADLIGHT_GEOMETRY,
+      HEADLIGHT_LENS
+    );
+    addLens(
+      box.max.x + 0.02,
+      headY,
+      -z,
+      HEADLIGHT_GEOMETRY,
+      HEADLIGHT_LENS
+    );
+    addLens(
+      box.min.x - 0.02,
+      tailY,
+      z,
+      TAILLIGHT_GEOMETRY,
+      TAILLIGHT_LENS
+    );
+    addLens(
+      box.min.x - 0.02,
+      tailY,
+      -z,
+      TAILLIGHT_GEOMETRY,
+      TAILLIGHT_LENS
+    );
 
     this.applyLights(vehicle, this.nightLightsOn);
   }
@@ -238,54 +279,58 @@ export class Traffic {
     });
   }
 
-  placeVehicle(vehicle) {
+  placeVehicle(vehicle, rotateWheels = true) {
     const progress = THREE.MathUtils.clamp(vehicle.motion.progress, 0, 1);
-    const point = vehicle.path.getPointAt(progress);
-    const tangent = vehicle.path.getTangentAt(progress);
+    const point = vehicle.path.getPointAt(progress, vehicle.pathPoint);
+    const tangent = vehicle.path.getTangentAt(progress, vehicle.pathTangent);
 
-    if (vehicle.reverse) {
-      tangent.multiplyScalar(-1);
-    }
+    // Right-hand traffic. Because the route itself includes the return trip,
+    // this places the truck in the other lane when it retraces the road.
+    point.x -= tangent.z * LANE_OFFSET;
+    point.z += tangent.x * LANE_OFFSET;
+
+    const distance = rotateWheels
+      ? point.distanceTo(vehicle.lastPosition)
+      : 0;
 
     vehicle.root.position.copy(point);
     vehicle.root.rotation.y = Math.atan2(-tangent.z, tangent.x);
 
-    if (vehicle.wheelRadius > 0) {
-      const distance = point.distanceTo(vehicle.lastPosition);
+    if (distance > 0 && distance < 4 && vehicle.wheelRadius > 0) {
+      const rotation = distance / vehicle.wheelRadius;
 
-      if (distance > 0 && distance < 4) {
-        const rotation = distance / vehicle.wheelRadius;
-
-        vehicle.wheels.forEach((wheel) => {
-          wheel.rotation.x += rotation;
-        });
-      }
+      vehicle.wheels.forEach((wheel) => {
+        wheel.rotation.x += rotation;
+      });
     }
 
     vehicle.lastPosition.copy(point);
   }
 
   startDrive(vehicle, time) {
-    const from = vehicle.motion.progress;
-    const to = vehicle.reverse ? 0 : 1;
-    const length = vehicle.path.getLength() * Math.abs(to - from);
-    const duration = Math.max(1200, (length / vehicle.speed) * 1000);
+    const duration = (vehicle.path.getLength() / vehicle.speed) * 1000;
 
     vehicle.tween = new Tween(vehicle.motion, false)
-      .to({ progress: to }, duration)
+      .to({ progress: 1 }, duration)
       .easing(Easing.Linear.None)
       .onUpdate(() => {
         this.placeVehicle(vehicle);
       })
       .onComplete(() => {
-        vehicle.reverse = !vehicle.reverse;
-        this.startDrive(vehicle);
-      });
+        this.removeVehicle(vehicle);
+      })
+      .start(time);
+  }
 
-    if (time === undefined) {
-      vehicle.tween.start();
-    } else {
-      vehicle.tween.start(time);
+  removeVehicle(vehicle) {
+    vehicle.tween?.stop();
+    vehicle.tween = null;
+    vehicle.root.removeFromParent();
+
+    const index = this.vehicles.indexOf(vehicle);
+
+    if (index !== -1) {
+      this.vehicles.splice(index, 1);
     }
   }
 
@@ -294,11 +339,16 @@ export class Traffic {
       return;
     }
 
-    this.vehicles.forEach((vehicle) => {
-      if (!vehicle.tween) {
-        this.startDrive(vehicle, time);
-      }
+    if (this.nextSpawnAt === null) {
+      this.nextSpawnAt = time;
+    }
 
+    if (time >= this.nextSpawnAt) {
+      this.addVehicle(time);
+      this.nextSpawnAt = time + SPAWN_INTERVAL_MS;
+    }
+
+    this.vehicles.slice().forEach((vehicle) => {
       vehicle.tween?.update(time);
     });
   }
