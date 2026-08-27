@@ -37,6 +37,8 @@ document.body.appendChild(renderer.domElement);
 
 const loadingScreen = document.getElementById('loadingScreen');
 const loadingStatus = document.getElementById('loadingStatus');
+const loadingProgress = document.getElementById('loadingProgress');
+const loadingPercent = document.getElementById('loadingPercent');
 let gameReady = false;
 
 // CAMERA CONTROLS
@@ -432,9 +434,14 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function setLoadingStatus(message) {
+function setLoadingStatus(message, progress) {
   if (loadingStatus) {
     loadingStatus.textContent = message;
+  }
+  if (progress !== undefined && loadingProgress) {
+    loadingProgress.style.setProperty('--progress', `${progress}%`);
+    loadingProgress.setAttribute('aria-valuenow', progress);
+    loadingPercent.textContent = `${progress}%`;
   }
 }
 
@@ -467,8 +474,8 @@ async function createPrecompileRoot() {
 async function precompileLook(isNight, precompileRoot) {
   lighting.setDayNight(isNight);
   setLoadingStatus(isNight
-    ? 'Preparing night lighting...'
-    : 'Preparing daylight...');
+    ? 'Lighting the docks...'
+    : 'Preparing the harbor...', isNight ? 90 : 82);
   await waitForPaint();
 
   await renderer.compileAsync(scene, camera);
@@ -480,7 +487,7 @@ async function precompileLook(isNight, precompileRoot) {
 }
 
 async function precompileWorkerFlashlight(precompileRoot) {
-  setLoadingStatus('Preparing worker flashlight...');
+  setLoadingStatus('Calibrating cranes and lights...', 95);
   worker.showFlashlight();
 
   try {
@@ -494,8 +501,10 @@ async function precompileWorkerFlashlight(precompileRoot) {
 }
 
 async function initializeGame() {
+  let progress = 0;
+  const loadingTimer = setInterval(() => setLoadingStatus('Loading port assets...', progress = Math.min(70, progress + 1)), 700);
   try {
-    setLoadingStatus('Loading harbor...');
+    setLoadingStatus('Loading port assets...', progress);
 
     await Promise.all([
       waterNormalsLoading,
@@ -508,12 +517,14 @@ async function initializeGame() {
       initialCargoLoading
     ]);
 
+    clearInterval(loadingTimer);
+    setLoadingStatus('Building the cargo terminal...', 75);
     const precompileRoot = await createPrecompileRoot();
     await precompileLook(false, precompileRoot);
     await precompileLook(true, precompileRoot);
     await precompileWorkerFlashlight(precompileRoot);
 
-    setLoadingStatus('Preparing night traffic...');
+    setLoadingStatus('Final checks...', 98);
     truck.root.visible = false;
     await waitForPaint();
     await renderer.compileAsync(scene, camera);
@@ -541,9 +552,10 @@ async function initializeGame() {
 
     gameReady = true;
     cameraViews.setEnabled(true);
-    setLoadingStatus('Ready');
+    setLoadingStatus('Ready for your shift.', 100);
     lastTime = null;
     requestAnimationFrame(animate);
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     if (loadingScreen) {
       loadingScreen.classList.add('is-hidden');
@@ -552,6 +564,7 @@ async function initializeGame() {
       }, 300);
     }
   } catch (error) {
+    clearInterval(loadingTimer);
     console.error('Unable to initialize the game:', error);
 
     if (loadingScreen) {

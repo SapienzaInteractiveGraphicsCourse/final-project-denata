@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="./cargo-ship.png" />
+  <link rel="preload" as="image" href="./Loading_screen.png" />
   <title>Crane &amp; Cargo</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: sans-serif; background: #87ceeb; }
@@ -141,10 +142,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #10161e;
+      background: #07131d;
       color: #f4f7fb;
       opacity: 1;
       transition: opacity .25s ease;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    #loadingScreen::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      z-index: -2;
+      background: url('./Loading_screen.png') center / cover;
+      filter: blur(3px);
+      transform: scale(1.02);
+    }
+    #loadingScreen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(rgba(3,14,24,.45), rgba(3,14,24,.78));
     }
     #loadingScreen.is-hidden {
       opacity: 0;
@@ -157,42 +176,88 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
-      min-width: 240px;
-      padding: 24px 30px;
+      gap: 18px;
+      width: min(600px, 78vw);
+      padding: 30px 38px;
       border: 1px solid rgba(255,255,255,.12);
-      border-radius: 12px;
-      background: rgba(255,255,255,.06);
+      border-radius: 16px;
+      background: rgba(4,20,32,.72);
+      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
     }
-    #loadingScreen .spinner {
-      width: 34px;
-      height: 34px;
-      border: 3px solid rgba(255,255,255,.18);
-      border-top-color: #ffdc8a;
-      border-radius: 50%;
-      animation: loading-spin .8s linear infinite;
+    .loading-title {
+      font-size: clamp(28px, 5vw, 46px);
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-shadow: 0 3px 12px rgba(0,0,0,.45);
+    }
+    .loading-status-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
     }
     #loadingStatus {
       font-size: 14px;
       letter-spacing: .02em;
     }
-    #loadingScreen.is-error .spinner {
+    #loadingPercent {
+      color: #ffdc8a;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .loading-progress {
+      --progress: 0%;
+      position: relative;
+      width: 100%;
+      padding-top: 48px;
+    }
+    .loading-track {
+      height: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      background: #062f4a;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,.4);
+    }
+    .loading-fill {
+      width: var(--progress);
+      height: 100%;
+      background: linear-gradient(#67e8f9, #0284c7 55%, #075985);
+      transition: width .5s ease;
+    }
+    .loading-ship {
+      position: absolute;
+      left: clamp(26px, var(--progress), calc(100% - 26px));
+      bottom: 9px;
+      width: 54px;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 4px 3px rgba(0,0,0,.4));
+      transition: left .5s ease;
+    }
+    #loadingScreen.is-error .loading-progress,
+    #loadingScreen.is-error #loadingPercent {
       display: none;
     }
     #loadingScreen.is-error #loadingStatus {
       color: #ffb3aa;
       text-align: center;
     }
-    @keyframes loading-spin {
-      to { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
   <div id="loadingScreen" role="status" aria-live="polite">
     <div class="loading-card">
-      <div class="spinner" aria-hidden="true"></div>
-      <div id="loadingStatus">Loading harbor...</div>
+      <div class="loading-title">CRANE &amp; CARGO</div>
+      <div class="loading-status-row">
+        <div id="loadingStatus">Loading port assets...</div>
+        <div id="loadingPercent">0%</div>
+      </div>
+      <div id="loadingProgress" class="loading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <img class="loading-ship" src="./cargo-ship.png" alt="" />
+        <div class="loading-track"><div class="loading-fill"></div></div>
+      </div>
     </div>
   </div>
   <div id="info">
