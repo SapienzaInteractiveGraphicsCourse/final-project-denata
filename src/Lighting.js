@@ -127,7 +127,7 @@ export function enableShadows(object, cast = true) {
 }
 
 export class Lighting {
-  constructor({ scene, sea, hemi, sun, dock, crane, truck, bounds, worker }) {
+  constructor({ scene, sea, hemi, sun, dock, crane, truck, traffic, bounds, worker }) {
     this.scene = scene;
     this.sea = sea;
     this.hemi = hemi;
@@ -135,6 +135,7 @@ export class Lighting {
     this.dock = dock;
     this.crane = crane;
     this.truck = truck;
+    this.traffic = traffic;
     this.bounds = bounds;
     this.worker = worker;
     this.isNight = false;
@@ -242,6 +243,7 @@ export class Lighting {
     this.dock.setLampsOn(this.isNight);
     this.crane.setLightsOn(this.isNight);
     this.truck.setLightsOn(this.isNight);
+    this.traffic?.setLightsOn(this.isNight);
 
     if (!this.isNight) {
       this.worker?.putAwayFlashlight();

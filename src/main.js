@@ -9,6 +9,7 @@ import { ContainerManager } from './ContainerManager.js';
 import { CargoInteraction } from './CargoInteraction.js';
 import { Physics } from './Physics.js';
 import { DecorativeShips } from './DecorativeShips.js';
+import { Traffic } from './Traffic.js';
 import { Lighting } from './Lighting.js';
 import { MapBounds } from './MapBounds.js';
 import { CameraViews } from './CameraViews.js';
@@ -141,8 +142,12 @@ scene.add(ship.root);
 const decorativeShips = new DecorativeShips(() => !ship.isMoving());
 scene.add(decorativeShips.root);
 
+// TRAFFIC
+const traffic = new Traffic();
+scene.add(traffic.root);
+
 // LIGHTING
-const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, bounds: mapBounds, worker });
+const lighting = new Lighting({ scene, sea, hemi, sun, dock, crane, truck, traffic, bounds: mapBounds, worker });
 const dayNightToggle = document.getElementById('dayNightToggle');
 const sunriseToggle = document.getElementById('sunriseToggle');
 const sunriseSwitch = document.getElementById('sunriseSwitch');
@@ -468,6 +473,10 @@ async function createPrecompileRoot() {
     root.add(template.clone(true));
   });
 
+  traffic.templates.forEach((template) => {
+    root.add(template.clone(true));
+  });
+
   return root;
 }
 
@@ -513,6 +522,7 @@ async function initializeGame() {
       crane.loading,
       ship.loading,
       decorativeShips.loading,
+      traffic.loading,
       worker.loading,
       initialCargoLoading
     ]);
@@ -609,6 +619,7 @@ function animate(time) {
 
   ship.update(time);
   decorativeShips.update(time, deltaTime);
+  traffic.update(time);
   truck.update(time, physics);
   crane.update(
     time,

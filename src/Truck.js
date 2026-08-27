@@ -292,7 +292,7 @@ export class Truck {
         this.onDeparted?.();
       },
       this.departurePath,
-      8000
+      16000
     );
   }
 
@@ -311,7 +311,7 @@ export class Truck {
         this.activePath = null;
       },
       this.arrivalPath,
-      9000
+      16000
     );
   }
 
