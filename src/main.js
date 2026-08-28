@@ -171,6 +171,20 @@ sunriseToggle?.addEventListener('change', () => {
   lighting.setSunrise(sunriseToggle.checked);
 });
 
+// AMBIENT SOUND
+const ambience = new Audio(`${import.meta.env.BASE_URL}assets/audio/dock_sound.mpeg`);
+ambience.loop = true;
+ambience.volume = 1;
+
+function playAmbience() {
+  ambience.play().catch(() => {});
+}
+
+// Browsers keep audio muted until the page gets a real click or key press.
+playAmbience();
+window.addEventListener('pointerdown', playAmbience, { once: true });
+window.addEventListener('keydown', playAmbience, { once: true });
+
 // PHYSICS
 const physics = new Physics();
 physics.addDock(dock);
