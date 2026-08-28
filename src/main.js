@@ -14,6 +14,7 @@ import { Lighting } from './Lighting.js';
 import { MapBounds } from './MapBounds.js';
 import { CameraViews } from './CameraViews.js';
 import { Worker } from './Worker.js';
+import { pulseBeacons } from './obstructionBeacons.js';
 
 // SCENE
 const scene = new THREE.Scene();
@@ -654,6 +655,7 @@ function animate(time) {
   updateFlashlightPrompt(workerView);
   physics.update(deltaTime, crane, truck);
   sea.material.uniforms.time.value += deltaTime;
+  pulseBeacons(time);
   cameraViews.update(deltaTime);
   renderer.render(scene, camera);
   requestAnimationFrame(animate);

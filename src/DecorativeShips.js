@@ -2,11 +2,19 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
 import { enableShadows } from './Lighting.js';
+import { addBeacon } from './obstructionBeacons.js';
 
 const WATER_LEVEL = -2;
 const SPAWN_INTERVAL = 15;
 const TRAVEL_TIME = 23000;
 const SHIP_CLEAR_TIME = 20000;
+
+const MAST_LIGHT = {
+  DecorativeShip1: [-6.63, 6.65, -0.01],
+  DecorativeShip2: [-0.7, 7.9, -8.52],
+  DecorativeShip3: [0.02, 5.18, 1.49],
+  DecorativeShip4: [7.06, 17.05, -0.38]
+};
 
 const SHIP_TYPES = [
   {
@@ -79,11 +87,11 @@ export class DecorativeShips {
 
   async loadTemplate(shipData) {
     const gltf = await this.loader.loadAsync(shipData.path);
-    const template = this.prepareModel(gltf.scene, shipData.length);
+    const template = this.prepareModel(gltf.scene, shipData.length, shipData.name);
     this.templates.set(shipData.path, template);
   }
 
-  prepareModel(model, targetLength) {
+  prepareModel(model, targetLength, name) {
     const modelHolder = new THREE.Group();
     modelHolder.add(model);
 
@@ -110,6 +118,10 @@ export class DecorativeShips {
     );
 
     enableShadows(modelHolder);
+    const tip = MAST_LIGHT[name];
+    if (tip) {
+      addBeacon(modelHolder, tip[0], tip[1], tip[2]);
+    }
     return modelHolder;
   }
 

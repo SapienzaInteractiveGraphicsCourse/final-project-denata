@@ -4,6 +4,7 @@ import { CargoSlots } from './CargoSlots.js';
 import { CONTAINER_SIZE } from './ContainerManager.js';
 import { enableShadows } from './Lighting.js';
 import { GroundDecals, applyPlanarXzUvs, loadAsphaltMap } from './GroundDecals.js';
+import { createBeacons, setBeaconsOn } from './obstructionBeacons.js';
 
 const DEPOT_ORIGIN = { x: -10, y: 2, z: 42 };
 const DEPOT_COL_SPACING = 3.2;
@@ -1747,6 +1748,7 @@ export class Dock {
     this.placeTallLampsAlong(-32, 30, -32, 72, 'left');
 
     this.createFakeLampLighting();
+    this.setupBeacons();
     this.setLampsOn(this.lampsOn);
   }
 
@@ -2032,6 +2034,28 @@ export class Dock {
     this.root.add(this.fakeLampLighting);
   }
 
+  setupBeacons() {
+    this.beacons = createBeacons([
+      [70, 18.25, 10],
+      [-25, 18.25, 10],
+      [-70, 18.25, 10],
+      [-23, 12.12, 30.05],
+      [-46.97, 16.98, 38.29],
+      [-46.97, 16.98, 46.13],
+      [-94.64, 43.27, 70.87],
+      [-93.67, 43.27, 89.92],
+      [-94.64, 43.27, 112.1],
+      [-93.67, 43.27, 131.15],
+      [-19.19, 17.57, 83.15],
+      [27.19, 17.57, 83.15],
+      [30.44, 10.78, 28.41],
+      [30.44, 10.78, 42.41],
+      [74.92, 10.67, 69.59],
+      [79.92, 10.67, 69.59]
+    ]);
+    this.root.add(this.beacons);
+  }
+
   setLampsOn(on) {
     this.lampsOn = on;
 
@@ -2043,5 +2067,7 @@ export class Dock {
       material.emissive.set(on ? 0xffe8a0 : 0x000000);
       material.emissiveIntensity = on ? 1.4 : 0;
     });
+
+    setBeaconsOn(on);
   }
 }

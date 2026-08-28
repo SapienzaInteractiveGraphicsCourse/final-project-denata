@@ -3,8 +3,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Tween, Easing } from '@tweenjs/tween.js';
 import { CargoSlots } from './CargoSlots.js';
 import { enableShadows } from './Lighting.js';
+import { addBeacon } from './obstructionBeacons.js';
 
 const WATER_LEVEL = -2;
+
+const MAST_LIGHT = {
+  Ship1: [2.59, 1.68, -0.31],
+  Ship2: [-0.51, 3.82, -5.78]
+};
 
 const SHIP_1_ROUTE = {
   arrivalStart: new THREE.Vector3(-150, WATER_LEVEL, -28),
@@ -143,7 +149,7 @@ export class Ship {
       this.templates.set(
         shipData.path,
         this.loader.loadAsync(shipData.path).then((gltf) => (
-          this.prepareModel(gltf.scene, shipData.length)
+          this.prepareModel(gltf.scene, shipData.length, shipData.name)
         ))
       );
     }
@@ -183,7 +189,7 @@ export class Ship {
     this.root.add(this.model);
   }
 
-  prepareModel(model, targetLength) {
+  prepareModel(model, targetLength, name) {
     const modelHolder = new THREE.Group();
     modelHolder.add(model);
 
@@ -211,6 +217,10 @@ export class Ship {
     );
 
     enableShadows(modelHolder);
+    const tip = MAST_LIGHT[name];
+    if (tip) {
+      addBeacon(modelHolder, tip[0], tip[1], tip[2]);
+    }
     return modelHolder;
   }
 

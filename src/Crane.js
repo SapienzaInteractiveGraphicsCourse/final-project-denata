@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GROUND_Y } from './Physics.js';
 import { enableShadows } from './Lighting.js';
+import { addBeacon } from './obstructionBeacons.js';
 
 export class Crane {
   constructor() {
@@ -100,6 +101,7 @@ export class Crane {
     this.setupBoomAnimation();
     this.setupLights();
     enableShadows(this.root);
+    this.setupBeacons();
   }
 
   setupWheels() {
@@ -162,6 +164,11 @@ export class Crane {
     workLight.target = workTarget;
     this.nightLights.push(workLight);
     this.setLightsOn(this.nightLightsOn);
+  }
+
+  setupBeacons() {
+    addBeacon(this.parts.Crane_Tower, 0.98, 1.15, 2.02);
+    addBeacon(this.parts.Boom, -0.2, 0.22, 34.61);
   }
 
   setLightsOn(on) {
