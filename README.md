@@ -91,19 +91,17 @@ We downloaded or found these models online. We scaled them, placed them, and ani
 | `ships/deco/deco_ship_3.glb` | Background ship | [Container Ship](https://sketchfab.com/3d-models/container-ship-aaa41cca946b4a08bc08cf692b7757be) — RM02 |
 | `ships/deco/deco_ship_4.glb` | Background ship | [Rescue Vessel](https://sketchfab.com/3d-models/rescue-vessel-f9815142cafc425090f98d329212b451) — gogiart |
 
-`harbor_crane.glb` is still in the folder but we do not use it. The crane in the game is `Crane_Modified3.glb`. Same original model: [Harbor Crane](https://sketchfab.com/3d-models/harbor-crane-d4d582ebd707426f93f1f5a9cdd0ce03) — MisterH.
-
 **Containers** (picked at random, then scaled to the same size)
 
 | File | What we use it for | Source |
 |------|--------------------|--------|
 | `20ft_container.glb` | Classic 20-foot container | [20ft Container](https://sketchfab.com/3d-models/20ft-container-c551a3eaeeb8431c9ec6e32181ed2c60) — dust_iny |
 | `containers/cargo_container_new.glb` | Colored cargo containers | [Cargo Container](https://sketchfab.com/3d-models/cargo-container-82609a2050274620b5dd1e2098e17c73) — Satendra Saraswat |
-| `containers/container.glb` | Extra container variant |  |
+| `containers/container.glb` | Extra container variant | [Container](https://sketchfab.com/3d-models/container-153c6b7ee8f94446b188b2c91259d714) — LiuMeowMeow |
 | `containers/container_3d_model.glb` | Extra container variant | [Container 3D Model](https://sketchfab.com/3d-models/container-3d-model-32b50362e78b4145901b20b14f66911a) — Javier Martín Hidalgo |
 | `containers/sea_cargo_container_-_legendarygamedev.glb` | Sea cargo container | [Sea Cargo Container](https://sketchfab.com/3d-models/sea-cargo-container-legendarygamedev-dec32c3dcc984ee79f914ebcd51bed44) — RienceCG |
 | `containers/shipping_container.glb` | Shipping container | [Shipping Container](https://sketchfab.com/3d-models/shipping-container-429e58a328374df4921b8a12bc142b28) — Egor Gulyushkin |
-| `containers/shipping_containers.glb` | Blue, green and red shipping containers |  |
+| `containers/shipping_containers.glb` | Blue, green and red shipping containers | [Shipping containers](https://sketchfab.com/3d-models/shipping-containers-54ce322346904659acebd538b08a2b99) — ForevereQ |
 
 **Environment and props**
 
@@ -127,24 +125,26 @@ We downloaded or found these models online. We scaled them, placed them, and ani
 | `textures/concrete/brushed_concrete_2_diff_2k.jpg` | Dock color (diffuse) | [Brushed Concrete 2](https://polyhaven.com/a/brushed_concrete_2) — Poly Haven |
 | `textures/concrete/brushed_concrete_2_nor_gl_2k.jpg` | Dock normal map | [Brushed Concrete 2](https://polyhaven.com/a/brushed_concrete_2) — Poly Haven |
 | `textures/concrete/brushed_concrete_2_rough_2k.jpg` | Dock roughness | [Brushed Concrete 2](https://polyhaven.com/a/brushed_concrete_2) — Poly Haven |
-| `textures/ground/asphalt_tile.png` | Road surface |  |
-| `textures/ground/dash_centerline_white.png` | White dashed center line on the roads |  |
-| `textures/ground/paint_stripe_white.png` | White road edges and yard slot lines |  |
-| `textures/ground/decal_manhole.png` | Manhole covers |  |
-| `textures/ground/decal_drain.png` | Storm drains |  |
-| `textures/ground/decal_patch.png` | Repair patches |  |
-| `textures/ground/decal_crack.png` | Pavement cracks |  |
-| `textures/ground/decal_pcrack.png` | Extra crack wear |  |
-| `textures/ground/decal_stop.png` | STOP markings |  |
-| `textures/ground/decal_arrow_white.png` | Direction arrows |  |
-| `textures/ground/decal_letter_d.png` | Depot letter D |  |
-| `textures/ground/decal_letter_y1.png` … `y5.png` | Yard labels Y1, Y3, Y4, Y5 |  |
-| `textures/ground/decal_dust.png` / `decal_dust_b.png` | Dust wear |  |
-| `textures/ground/decal_dirt.png` / `decal_dirt_b.png` | Dirt wear |  |
-| `textures/ground/decal_oil.png` | Oil stains |  |
-| `textures/ground/decal_fish.png` | Fish mark on the quay |  |
-| `textures/ground/decal_salt.png` | Salt wear |  |
-| `textures/ground/decal_net.png` | Net wear |  |
+| `textures/concrete/quay_wall.png` | Vertical quay wall faces on the dock platform | AI generated |
+| `textures/ground/asphalt_tile.png` | Road surface | AI generated |
+| `textures/ground/dash_centerline_white.png` | White dashed center line on the roads | AI generated |
+| `textures/ground/paint_stripe_white.png` | White road edges and yard slot lines | AI generated |
+| `textures/ground/paint_stripe_orange.png` | Orange hatch markings in the crane zone | AI generated |
+| `textures/ground/decal_manhole.png` | Manhole covers | AI generated |
+| `textures/ground/decal_drain.png` | Storm drains | AI generated |
+| `textures/ground/decal_patch.png` | Repair patches | AI generated |
+| `textures/ground/decal_crack.png` | Pavement cracks | AI generated |
+| `textures/ground/decal_pcrack.png` | Extra crack wear | AI generated |
+| `textures/ground/decal_stop.png` | STOP markings | AI generated |
+| `textures/ground/decal_arrow_white.png` | Direction arrows | AI generated |
+| `textures/ground/decal_letter_d.png` | Depot letter D | AI generated |
+| `textures/ground/decal_letter_y1.png` … `y5.png` | Yard labels Y1, Y3, Y4, Y5 | AI generated |
+| `textures/ground/decal_dust.png` / `decal_dust_b.png` | Dust wear | AI generated |
+| `textures/ground/decal_dirt.png` / `decal_dirt_b.png` | Dirt wear | AI generated |
+| `textures/ground/decal_oil.png` | Oil stains | AI generated |
+| `textures/ground/decal_fish.png` | Fish mark on the quay | AI generated |
+| `textures/ground/decal_salt.png` | Salt wear | AI generated |
+| `textures/ground/decal_net.png` | Net wear | AI generated |
 
 Roads, the dock box, the sky dome and the fog walls are built in code with Three.js geometry. They are not imported models.
 
