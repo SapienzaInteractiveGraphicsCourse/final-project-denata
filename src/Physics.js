@@ -2,7 +2,12 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { CONTAINER_SIZE } from './ContainerManager.js';
 
-const GRAVITY = 18;
+const GRAVITY = 9.81;
+const FIXED_TIME_STEP = 1 / 60;
+const MAX_SUB_STEPS = 10;
+const MAX_FALL_SPEED = 14;
+const CARGO_LINEAR_DAMPING = 0.08;
+const CARGO_ANGULAR_DAMPING = 0.6;
 export const GROUND_Y = 2;
 const OVERLAP_MARGIN = 0.02;
 const GROUP_CARGO = 1;
@@ -18,8 +23,9 @@ export class Physics {
   constructor() {
     this.world = new CANNON.World();
     this.world.gravity.set(0, -GRAVITY, 0);
+    this.world.allowSleep = true;
     this.world.defaultContactMaterial.friction = 0.6;
-    this.world.defaultContactMaterial.restitution = 0.1;
+    this.world.defaultContactMaterial.restitution = 0;
     this.containers = [];
     this.kinematicMeshes = [];
     this.heldCargo = null;
@@ -45,6 +51,9 @@ export class Physics {
 
     this.world.addEventListener('beginContact', (event) => {
       this.handleContact(event.bodyA, event.bodyB);
+    });
+    this.world.addEventListener('preStep', () => {
+      this.limitFreeFallSpeed();
     });
   }
 
@@ -163,6 +172,11 @@ export class Physics {
     const body = new CANNON.Body({
       mass: 0,
       type: CANNON.Body.KINEMATIC,
+      linearDamping: CARGO_LINEAR_DAMPING,
+      angularDamping: CARGO_ANGULAR_DAMPING,
+      allowSleep: true,
+      sleepSpeedLimit: 0.15,
+      sleepTimeLimit: 0.5,
       shape: new CANNON.Box(new CANNON.Vec3(
         CONTAINER_SIZE.x / 2,
         CONTAINER_SIZE.y / 2,
@@ -222,8 +236,6 @@ export class Physics {
     }
 
     cargo.userData.physicsState = state;
-    body.velocity.set(0, 0, 0);
-    body.angularVelocity.set(0, 0, 0);
 
     if (state === 'free') {
       body.type = CANNON.Body.DYNAMIC;
@@ -239,13 +251,36 @@ export class Physics {
 
     body.updateMassProperties();
     this.copyMeshToBody(cargo, body, 0);
-    body.velocity.set(0, 0, 0);
+    this.resetBodyMotion(body);
+    body.aabbNeedsUpdate = true;
+    body.updateAABB();
     body.wakeUp();
+
     this.heldCargo = state === 'held' ? cargo : this.heldCargo === cargo ? null : this.heldCargo;
+  }
+
+  resetBodyMotion(body) {
+    body.velocity.set(0, 0, 0);
+    body.angularVelocity.set(0, 0, 0);
+    body.force.set(0, 0, 0);
+    body.torque.set(0, 0, 0);
+    body.previousPosition.copy(body.position);
+    body.interpolatedPosition.copy(body.position);
+    body.previousQuaternion.copy(body.quaternion);
+    body.interpolatedQuaternion.copy(body.quaternion);
   }
 
   getFreeCargos() {
     return this.containers.filter((cargo) => cargo.userData.physicsState === 'free');
+  }
+
+  limitFreeFallSpeed() {
+    this.getFreeCargos().forEach((cargo) => {
+      cargo.userData.body.velocity.y = Math.max(
+        cargo.userData.body.velocity.y,
+        -MAX_FALL_SPEED
+      );
+    });
   }
 
   copyMeshToBody(cargo, body, deltaTime) {
@@ -257,17 +292,20 @@ export class Physics {
   }
 
   copyBodyToMesh(cargo, body) {
+    const position = body.interpolatedPosition;
+    const quaternion = body.interpolatedQuaternion;
+
     this.worldQuaternion.set(
-      body.quaternion.x,
-      body.quaternion.y,
-      body.quaternion.z,
-      body.quaternion.w
+      quaternion.x,
+      quaternion.y,
+      quaternion.z,
+      quaternion.w
     );
     this.worldCenter.copy(this.centerOffset).applyQuaternion(this.worldQuaternion);
     cargo.position.set(
-      body.position.x - this.worldCenter.x,
-      body.position.y - this.worldCenter.y,
-      body.position.z - this.worldCenter.z
+      position.x - this.worldCenter.x,
+      position.y - this.worldCenter.y,
+      position.z - this.worldCenter.z
     );
     cargo.quaternion.copy(this.worldQuaternion);
     cargo.scale.set(1, 1, 1);
@@ -606,7 +644,7 @@ export class Physics {
     });
 
     this.copyTruckToBody(deltaTime);
-    this.world.step(1 / 60, deltaTime, 3);
+    this.world.step(FIXED_TIME_STEP, deltaTime, MAX_SUB_STEPS);
 
     this.containers.forEach((cargo) => {
       if (cargo.userData.physicsState !== 'free') {
