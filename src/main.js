@@ -177,6 +177,9 @@ const ambience = new Audio(`${import.meta.env.BASE_URL}assets/audio/dock_sound.m
 ambience.loop = true;
 ambience.volume = 1;
 
+const craneBeep = new Audio(`${import.meta.env.BASE_URL}assets/audio/crane_sound.mp3`);
+craneBeep.loop = true;
+
 function playAmbience() {
   ambience.play().catch(() => {});
 }
@@ -627,6 +630,19 @@ function animate(time) {
   const hoistDirection = workerView
     ? 0
     : Number(craneControls.raiseSpreader) - Number(craneControls.lowerSpreader);
+
+  if (travelDirection !== 0) {
+    craneBeep.volume = 1;
+    if (craneBeep.paused) {
+      craneBeep.currentTime = 0;
+      craneBeep.play().catch(() => {});
+    }
+  } else if (!craneBeep.paused) {
+    craneBeep.volume = Math.max(0, craneBeep.volume - deltaTime * 2);
+    if (craneBeep.volume === 0) {
+      craneBeep.pause();
+    }
+  }
 
   const walkForward = Number(workerControls.forward) - Number(workerControls.back);
   const walkTurn = Number(workerControls.left) - Number(workerControls.right);
