@@ -31,6 +31,8 @@ const DOCK_CONCRETE_NORMAL_URL =
   `${import.meta.env.BASE_URL}assets/textures/concrete/brushed_concrete_2_nor_gl_2k.jpg`;
 const DOCK_CONCRETE_ROUGHNESS_URL =
   `${import.meta.env.BASE_URL}assets/textures/concrete/brushed_concrete_2_rough_2k.jpg`;
+const QUAY_WALL_URL =
+  `${import.meta.env.BASE_URL}assets/textures/concrete/quay_wall.png`;
 const INDUSTRIAL_BUILDING_URL =
   `${import.meta.env.BASE_URL}assets/models/industrial_buildings_set_-_low_poly_models.glb`;
 const FORKLIFT_URL =
@@ -798,6 +800,11 @@ export class Dock {
       metalness: 0,
       roughness: 0.95
     });
+    const wallMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0,
+      roughness: 0.88
+    });
 
     this.platform = new THREE.Mesh(
       new THREE.BoxGeometry(DOCK_WIDTH, 5, DOCK_LENGTH),
@@ -807,7 +814,7 @@ export class Dock {
         concreteMaterial,
         sideMaterial,
         sideMaterial,
-        sideMaterial
+        wallMaterial
       ]
     );
     this.platform.name = 'DockPlatform';
@@ -819,8 +826,9 @@ export class Dock {
     return Promise.all([
       loader.loadAsync(DOCK_CONCRETE_DIFFUSE_URL),
       loader.loadAsync(DOCK_CONCRETE_NORMAL_URL),
-      loader.loadAsync(DOCK_CONCRETE_ROUGHNESS_URL)
-    ]).then(([diffuse, normal, roughness]) => {
+      loader.loadAsync(DOCK_CONCRETE_ROUGHNESS_URL),
+      loader.loadAsync(QUAY_WALL_URL)
+    ]).then(([diffuse, normal, roughness, wallMap]) => {
       [diffuse, normal, roughness].forEach((texture) => {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
@@ -837,6 +845,14 @@ export class Dock {
       concreteMaterial.normalScale.set(0.55, 0.55);
       concreteMaterial.roughnessMap = roughness;
       concreteMaterial.needsUpdate = true;
+
+      wallMap.colorSpace = THREE.SRGBColorSpace;
+      wallMap.wrapS = THREE.RepeatWrapping;
+      wallMap.wrapT = THREE.ClampToEdgeWrapping;
+      wallMap.repeat.set(DOCK_WIDTH / DOCK_TEXTURE_SIZE, 1);
+      wallMap.anisotropy = 8;
+      wallMaterial.map = wallMap;
+      wallMaterial.needsUpdate = true;
     });
   }
 

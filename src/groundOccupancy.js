@@ -100,6 +100,8 @@ export const ROAD_EDGES = [
   [2.68, 28.04, 2.68, 55.96], [-29.32, 61.32, -8.04, 61.32], [-29.32, 66.68, -8.04, 66.68]
 ];
 
+export const CRANE_ZONE = { x: 14, z: 34, width: 11, depth: 46 };
+
 function slots(width, depth, pts) {
   return pts.map(([x, z]) => ({ x, z, width, depth }));
 }

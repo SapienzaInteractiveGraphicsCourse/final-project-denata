@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   ALL_DASH_ARCS,
   ALL_POINT_DECALS,
+  CRANE_ZONE,
   DASHES,
   ROAD_EDGES,
   STOP_BARS,
@@ -18,6 +19,7 @@ const TEX = `${import.meta.env.BASE_URL}assets/textures/ground/`;
 const ASPHALT_URL = TEX + 'asphalt_tile.png';
 const DASH_URL = TEX + 'dash_centerline_white.png';
 const STRIPE_URL = TEX + 'paint_stripe_white.png';
+const ORANGE_URL = TEX + 'paint_stripe_orange.png';
 
 const KIND_URLS = {
   manhole: TEX + 'decal_manhole.png',
@@ -64,6 +66,7 @@ const SLOT_Y = 2.079;
 const OUTER_Y = 2.0805;
 const EDGE_Y = 2.077;
 const WEAR_Y = 2.072;
+const HATCH_Y = 2.081;
 const STRIPE_TILE = 2.4;
 const ROAD_ARC = 8;
 const ARC_EDGE_INNER = 5.32;
@@ -216,6 +219,36 @@ function addRect(geos, seen, rect, thickness, y) {
   addStripe(geos, seen, R, S, R, N, thickness, y);
 }
 
+function addHatch(geos, seen, rect, spacing, thickness, y) {
+  addRect(geos, seen, rect, thickness, y);
+  const L = rect.x - rect.width / 2;
+  const R = rect.x + rect.width / 2;
+  const S = rect.z - rect.depth / 2;
+  const N = rect.z + rect.depth / 2;
+  for (let c = L - N; c <= R - S; c += spacing) {
+    const pts = [];
+    [[L, L - c], [R, R - c], [S + c, S], [N + c, N]].forEach(([x, z]) => {
+      if (x >= L - 0.02 && x <= R + 0.02 && z >= S - 0.02 && z <= N + 0.02) {
+        pts.push([x, z]);
+      }
+    });
+    if (pts.length < 2) {
+      continue;
+    }
+    pts.sort((a, b) => a[0] - b[0]);
+    addStripe(
+      geos,
+      seen,
+      pts[0][0],
+      pts[0][1],
+      pts[pts.length - 1][0],
+      pts[pts.length - 1][1],
+      thickness,
+      y
+    );
+  }
+}
+
 function addArcEdge(geos, cx, cz, radius, rotY) {
   const start = -Math.PI / 2;
   let prev = arcPoint(cx, cz, start, radius, rotY);
@@ -246,16 +279,20 @@ export class GroundDecals {
 
   async build() {
     const kinds = Object.entries(KIND_URLS);
-    const [dashMap, stripeMap, ...kindMaps] = await Promise.all([
+    const [dashMap, stripeMap, orangeMap, ...kindMaps] = await Promise.all([
       loader.loadAsync(DASH_URL),
       loader.loadAsync(STRIPE_URL),
+      loader.loadAsync(ORANGE_URL),
       ...kinds.map(([, url]) => loader.loadAsync(url))
     ]);
 
     prepareColorMap(dashMap);
     prepareColorMap(stripeMap);
+    prepareColorMap(orangeMap);
     stripeMap.wrapS = THREE.RepeatWrapping;
     stripeMap.wrapT = THREE.ClampToEdgeWrapping;
+    orangeMap.wrapS = THREE.RepeatWrapping;
+    orangeMap.wrapT = THREE.ClampToEdgeWrapping;
 
     const maps = {};
     kinds.forEach(([kind], i) => {
@@ -296,6 +333,15 @@ export class GroundDecals {
       polygonOffsetFactor: -2,
       polygonOffsetUnits: -2
     }), 'GroundStripes');
+
+    const hatchGeos = [];
+    addHatch(hatchGeos, new Set(), CRANE_ZONE, 2, 0.16, HATCH_Y);
+    addMerged(this.root, hatchGeos, paintMat(orangeMap, {
+      alphaTest: 0.2,
+      roughness: 0.88,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2
+    }), 'CraneHatch');
 
     const wearByKind = {};
     Object.keys(WEAR_LOOK).forEach((kind) => {
